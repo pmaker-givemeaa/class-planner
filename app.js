@@ -230,6 +230,7 @@
       (current.status === "finished" ? "종강" : (current.index + 1) + "차시");
     var metaText = current.status === "upcoming" ? shortDate(parseLocalDate(cls.startDate)) + " 개강 예정" :
       (current.status === "undated" ? "개강일 미설정" : shortDate(current.sessionDate) + " 수업");
+    var checkIcon = '<svg class="toggle-check" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.3 6.4 12 13 4.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
     return '<article class="class-card ' + current.status + " grade-" + escapeHtml(cls.grade || "unset") + '" data-class-id="' + cls.id + '">' +
       '<span class="lesson-badge">' + statusText + "</span>" +
       "<h3>" + escapeHtml(cls.name) +
@@ -240,10 +241,10 @@
       '<div class="card-checks">' +
       '<label class="' + (lesson && lesson.ready ? "checked" : "") + '"><input type="checkbox" data-card-check="ready"' +
       (lesson && lesson.ready ? " checked" : "") + (inactive || lesson.break ? " disabled" : "") +
-      '><span>수업 준비</span><b>' + (lesson && lesson.ready ? "ON" : "OFF") + "</b></label>" +
-      '<label class="' + (lesson && lesson.test ? "checked" : "") + '"><input type="checkbox" data-card-check="test"' +
+      '><span>수업 준비</span>' + checkIcon + "</label>" +
+      '<label class="test-toggle ' + (lesson && lesson.test ? "checked" : "") + '"><input type="checkbox" data-card-check="test"' +
       (lesson && lesson.test ? " checked" : "") + (inactive || current.index === 0 || lesson.break ? " disabled" : "") +
-      '><span>테스트 준비</span><b>' + (lesson && lesson.test ? "ON" : "OFF") + "</b></label></div>" +
+      '><span>테스트 준비</span>' + checkIcon + "</label></div>" +
       '<div class="progress-track"><div class="progress-bar" style="width:' + rate + '%"></div></div>' +
       '<div class="class-meta"><span>' + done + " / " + eligible.length + '차시 준비</span>' +
       '<span>자세히 보기 ›</span></div></article>';
