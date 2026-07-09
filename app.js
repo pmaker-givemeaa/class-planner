@@ -239,9 +239,11 @@
       '<p class="current-topic">' + escapeHtml(lesson ? (lesson.topic || "진도 미입력") : "등록된 차시 없음") + "</p>" +
       '<div class="card-checks">' +
       '<label class="' + (lesson && lesson.ready ? "checked" : "") + '"><input type="checkbox" data-card-check="ready"' +
-      (lesson && lesson.ready ? " checked" : "") + (inactive || lesson.break ? " disabled" : "") + '>수업 준비</label>' +
+      (lesson && lesson.ready ? " checked" : "") + (inactive || lesson.break ? " disabled" : "") +
+      '><span>수업 준비</span><b>' + (lesson && lesson.ready ? "ON" : "OFF") + "</b></label>" +
       '<label class="' + (lesson && lesson.test ? "checked" : "") + '"><input type="checkbox" data-card-check="test"' +
-      (lesson && lesson.test ? " checked" : "") + (inactive || current.index === 0 || lesson.break ? " disabled" : "") + '>테스트 준비</label></div>' +
+      (lesson && lesson.test ? " checked" : "") + (inactive || current.index === 0 || lesson.break ? " disabled" : "") +
+      '><span>테스트 준비</span><b>' + (lesson && lesson.test ? "ON" : "OFF") + "</b></label></div>" +
       '<div class="progress-track"><div class="progress-bar" style="width:' + rate + '%"></div></div>' +
       '<div class="class-meta"><span>' + done + " / " + eligible.length + '차시 준비</span>' +
       '<span>자세히 보기 ›</span></div></article>';
@@ -374,7 +376,7 @@
     }
 
     var card = e.target.closest("[data-class-id]");
-    if (card && !e.target.closest("[data-card-check]")) openLessons(card.dataset.classId);
+    if (card && !e.target.closest(".card-checks")) openLessons(card.dataset.classId);
 
     var use = e.target.closest("[data-template-use]");
     if (use) {
