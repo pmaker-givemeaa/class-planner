@@ -38,11 +38,13 @@
             if (!("startDate" in cls)) cls.startDate = "";
             if (!("startTime" in cls)) cls.startTime = "";
             if (!("grade" in cls)) cls.grade = "";
+            if (!("book" in cls)) cls.book = "";
             if (cls.grade === "elementary") cls.grade = "elementary6";
             if (["high1", "high2", "high3", "other", ""].indexOf(cls.grade) >= 0) cls.grade = "ungraded";
           });
         });
         parsed.templates.forEach(function (template) {
+          if (!("book" in template)) template.book = "";
           if (template.grade === "elementary") template.grade = "elementary6";
           if (!template.grade || ["high1", "high2", "high3", "other"].indexOf(template.grade) >= 0) {
             template.grade = "ungraded";
@@ -230,7 +232,9 @@
       (current.status === "undated" ? "개강일 미설정" : shortDate(current.sessionDate) + " 수업");
     return '<article class="class-card ' + current.status + " grade-" + escapeHtml(cls.grade || "unset") + '" data-class-id="' + cls.id + '">' +
       '<span class="lesson-badge">' + statusText + "</span>" +
-      "<h3>" + escapeHtml(cls.name) + "</h3>" +
+      "<h3>" + escapeHtml(cls.name) +
+      (cls.book ? ' <span class="title-separator">·</span> <span class="book-name">' + escapeHtml(cls.book) + "</span>" : "") +
+      "</h3>" +
       '<span class="class-time">' + escapeHtml((cls.startTime || "시각 미설정") + " · " + metaText) + "</span>" +
       '<p class="current-topic">' + escapeHtml(lesson ? (lesson.topic || "진도 미입력") : "등록된 차시 없음") + "</p>" +
       '<div class="card-checks">' +
@@ -263,6 +267,7 @@
     $("classDay").value = cls ? cls.day : (presetDay || "월");
     $("className").value = cls ? cls.name : "";
     $("classGrade").value = cls ? (cls.grade || "ungraded") : "ungraded";
+    $("classBook").value = cls ? (cls.book || "") : "";
     $("classStartDate").value = cls ? (cls.startDate || "") : suggestedStartDate(presetDay || "월");
     $("classStartTime").value = cls ? (cls.startTime || "") : "10:00";
     $("lessonLines").value = cls ? cls.lessons.map(function (l) { return l.topic; }).join("\n") : "";
@@ -281,6 +286,7 @@
       cls.name = name;
       cls.day = $("classDay").value;
       cls.grade = $("classGrade").value;
+      cls.book = $("classBook").value.trim();
       cls.startDate = $("classStartDate").value;
       cls.startTime = $("classStartTime").value;
       cls.lessons = topics.map(function (topic, index) {
@@ -291,6 +297,7 @@
       classes.push({
         id: uid(), name: name, day: $("classDay").value,
         grade: $("classGrade").value,
+        book: $("classBook").value.trim(),
         startDate: $("classStartDate").value, startTime: $("classStartTime").value,
         lessons: topics.map(makeLesson)
       });
@@ -332,10 +339,11 @@
     if (existing) {
       existing.topics = topics;
       existing.grade = cls.grade || "";
+      existing.book = cls.book || "";
       existing.updatedAt = new Date().toISOString();
       toast("같은 이름의 보관 수업을 업데이트했습니다.");
     } else {
-      state.templates.push({ id: uid(), name: cls.name, grade: cls.grade || "", topics: topics, updatedAt: new Date().toISOString() });
+      state.templates.push({ id: uid(), name: cls.name, grade: cls.grade || "", book: cls.book || "", topics: topics, updatedAt: new Date().toISOString() });
       toast("수업을 보관함에 저장했습니다.");
     }
     saveState();
@@ -374,6 +382,7 @@
       currentQuarter().classes.push({
         id: uid(), name: template.name, day: "월",
         grade: template.grade || "ungraded",
+        book: template.book || "",
         startDate: suggestedStartDate("월"), startTime: "10:00",
         lessons: template.topics.map(makeLesson)
       });
@@ -497,9 +506,10 @@
       if (existing) {
         existing.topics = topics;
         existing.grade = cls.grade || "";
+        existing.book = cls.book || "";
         existing.updatedAt = new Date().toISOString();
       } else {
-        state.templates.push({ id: uid(), name: cls.name, grade: cls.grade || "", topics: topics, updatedAt: new Date().toISOString() });
+        state.templates.push({ id: uid(), name: cls.name, grade: cls.grade || "", book: cls.book || "", topics: topics, updatedAt: new Date().toISOString() });
       }
     });
     saveState("현재 분기의 모든 수업을 보관했습니다.");
@@ -583,6 +593,7 @@
       id: uid(), name: $("pasteClassName").value.trim(),
       day: $("pasteDay").value,
       grade: "ungraded",
+      book: "",
       startDate: suggestedStartDate($("pasteDay").value), startTime: "10:00",
       lessons: lessons
     });

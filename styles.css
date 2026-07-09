@@ -148,6 +148,8 @@ main.summary-hidden .tabs { margin-top: 0; }
 .class-card.upcoming { border-style: dashed; background: #f7f8f7; opacity: .72; }
 .class-card.finished { background: #f0f3f1; }
 .class-card h3 { margin: 0 0 4px; padding-right: 43px; font-size: 13px; line-height: 1.45; }
+.class-card .title-separator { color: #95a099; font-weight: 400; }
+.class-card .book-name { color: #526159; font-weight: 550; }
 .class-time { display: block; margin-bottom: 10px; color: var(--muted); font-size: 10px; }
 .lesson-badge {
   position: absolute;
@@ -165,21 +167,56 @@ main.summary-hidden .tabs { margin-top: 0; }
 .current-topic { min-height: 35px; margin: 0 0 10px; color: #33423b; font-size: 11px; line-height: 1.45; }
 .card-checks { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-bottom: 10px; }
 .card-checks label {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
-  padding: 6px 3px;
-  border: 1px solid #e1e7e3;
-  border-radius: 7px;
-  color: #526059;
-  background: #fafbfa;
+  gap: 7px;
+  min-height: 30px;
+  padding: 6px 7px;
+  border: 1px solid rgba(255, 255, 255, .72);
+  border-radius: 8px;
+  color: #66716b;
+  background: linear-gradient(145deg, rgba(255, 255, 255, .58), rgba(238, 243, 240, .38));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .8), 0 2px 6px rgba(35, 55, 44, .07);
+  backdrop-filter: blur(8px);
   font-size: 9px;
+  letter-spacing: -.1px;
   cursor: pointer;
+  transition: border-color .16s ease, background .16s ease, box-shadow .16s ease, color .16s ease;
 }
-.card-checks label.checked { color: var(--green); border-color: #b8d5c4; background: var(--green-soft); font-weight: 800; }
-.card-checks input { width: 14px; height: 14px; margin: 0; accent-color: var(--green); }
-.card-checks input:disabled { cursor: not-allowed; }
+.card-checks label::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  flex: 0 0 8px;
+  border: 1px solid #9da7a1;
+  border-radius: 50%;
+  background: #c8ceca;
+  box-shadow: inset 0 1px 2px rgba(23, 33, 29, .22);
+  transition: .16s ease;
+}
+.card-checks label:hover { border-color: rgba(104, 142, 121, .5); }
+.card-checks label.checked {
+  color: #0b6940;
+  border-color: rgba(63, 178, 111, .62);
+  background: linear-gradient(145deg, rgba(225, 252, 236, .86), rgba(195, 238, 213, .62));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .88), 0 0 0 1px rgba(67, 190, 117, .12), 0 3px 10px rgba(23, 136, 70, .14);
+  font-weight: 850;
+}
+.card-checks label.checked::before {
+  border-color: #38b86e;
+  background: #42df82;
+  box-shadow: 0 0 5px #37d879, 0 0 10px rgba(45, 207, 113, .72), inset 0 1px 1px rgba(255, 255, 255, .7);
+}
+.card-checks label:has(input:disabled) { opacity: .48; cursor: not-allowed; }
+.card-checks input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
 .progress-track { height: 5px; overflow: hidden; border-radius: 10px; background: #e7ece9; }
 .progress-bar { height: 100%; border-radius: 10px; background: var(--green); }
 .class-meta { display: flex; justify-content: space-between; margin-top: 8px; color: var(--muted); font-size: 10px; }
@@ -235,7 +272,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--green); box-shad
 textarea { resize: vertical; line-height: 1.5; }
 .form-row { display: grid; grid-template-columns: 150px 1fr; gap: 13px; margin-bottom: 16px; }
 .form-row.class-time-row { grid-template-columns: 1fr 1fr; }
-.grade-field { display: block; margin-bottom: 16px; }
+.grade-field, .book-field { display: block; margin-bottom: 16px; }
 .time-chips { display: flex; gap: 5px; margin-top: 6px; }
 .time-chips button { padding: 4px 10px; border-radius: 20px; color: var(--green); font-size: 10px; }
 .hint { color: var(--muted); font-weight: 400; }
