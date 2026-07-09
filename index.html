@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>수업 플래너</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <p class="eyebrow">LOCAL CLASS PLANNER</p>
+      <h1>수업 플래너</h1>
+    </div>
+    <div class="quarter-tools">
+      <label>
+        현재 분기
+        <select id="quarterSelect"></select>
+      </label>
+      <button id="addQuarterBtn" class="primary">+ 새 분기</button>
+      <div class="overflow-wrap">
+        <button id="overflowMenuBtn" class="icon-button" title="더 보기" aria-expanded="false">•••</button>
+        <div id="overflowMenu" class="overflow-menu hidden">
+          <button id="toggleSummaryBtn">상태 바 숨기기</button>
+          <button id="restoreDaysBtn">숨긴 요일 다시 보기</button>
+          <button id="pasteBtn">시트에서 붙여넣기</button>
+          <span class="menu-divider"></span>
+          <button id="quarterMenuBtn">현재 분기 관리</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="summary" aria-label="분기 현황">
+      <div>
+        <span>수업</span>
+        <strong id="classCount">0</strong>
+      </div>
+      <div>
+        <span>전체 차시</span>
+        <strong id="lessonCount">0</strong>
+      </div>
+      <div>
+        <span>준비 완료</span>
+        <strong id="readyCount">0 / 0</strong>
+      </div>
+      <div>
+        <span>테스트 완료</span>
+        <strong id="testCount">0 / 0</strong>
+      </div>
+      <p id="saveStatus">이 브라우저에 자동 저장됩니다.</p>
+    </section>
+
+    <nav class="tabs">
+      <button class="tab active" data-tab="schedule">수업표</button>
+      <button class="tab" data-tab="templates">수업 보관함</button>
+      <button class="tab" data-tab="backup">백업</button>
+    </nav>
+
+    <section id="schedulePanel" class="panel active">
+      <div class="panel-heading">
+        <div>
+          <h2>요일별 수업</h2>
+          <p>이번 주 차시를 확인하고 준비 상태를 바로 체크할 수 있습니다.</p>
+        </div>
+      </div>
+      <div id="scheduleBoard" class="schedule-board"></div>
+      <div id="emptySchedule" class="empty-state hidden">
+        <div class="empty-icon">週</div>
+        <h3>아직 등록된 수업이 없습니다</h3>
+        <p>수업을 직접 추가하거나 Google Sheets에서 진도표를 붙여넣으세요.</p>
+        <button class="primary" data-action="add-class">첫 수업 추가</button>
+      </div>
+    </section>
+
+    <section id="templatesPanel" class="panel">
+      <div class="panel-heading">
+        <div>
+          <h2>수업 보관함</h2>
+          <p>수업 이름과 차시별 진도를 저장해 다음 분기에 다시 사용합니다.</p>
+        </div>
+        <button id="saveAllTemplatesBtn">현재 분기 수업 모두 보관</button>
+      </div>
+      <div id="templateGrid" class="template-grid"></div>
+      <div id="emptyTemplates" class="empty-state hidden">
+        <div class="empty-icon">庫</div>
+        <h3>보관된 수업이 없습니다</h3>
+        <p>수업표에서 수업을 보관하면 여기에 나타납니다.</p>
+      </div>
+    </section>
+
+    <section id="backupPanel" class="panel">
+      <div class="panel-heading">
+        <div>
+          <h2>데이터 백업</h2>
+          <p>브라우저 데이터 삭제에 대비해 가끔 파일로 보관해 주세요.</p>
+        </div>
+      </div>
+      <div class="backup-grid">
+        <article>
+          <span class="step">01</span>
+          <h3>백업 파일 저장</h3>
+          <p>모든 분기와 수업 보관함을 JSON 파일 하나로 내려받습니다.</p>
+          <button id="exportBtn" class="primary">백업 다운로드</button>
+        </article>
+        <article>
+          <span class="step">02</span>
+          <h3>백업 파일 복원</h3>
+          <p>기존 백업을 불러옵니다. 현재 데이터는 백업 내용으로 교체됩니다.</p>
+          <label class="file-button">백업 불러오기<input id="importInput" type="file" accept=".json,application/json"></label>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="classDialog">
+    <form method="dialog" id="classForm">
+      <div class="dialog-head">
+        <div>
+          <p class="eyebrow">CLASS DETAILS</p>
+          <h2 id="classDialogTitle">수업 추가</h2>
+        </div>
+        <button type="button" class="close-button" data-close="classDialog">×</button>
+      </div>
+      <div class="form-row">
+        <label>요일
+          <select id="classDay" required></select>
+        </label>
+        <label>수업 이름
+          <input id="className" required maxlength="60" placeholder="예: [일] 중2 통과 생지">
+        </label>
+      </div>
+      <label class="grade-field">학년
+        <select id="classGrade">
+          <option value="elementary6">초6</option>
+          <option value="middle1">중1</option>
+          <option value="middle2">중2</option>
+          <option value="middle3">중3</option>
+          <option value="gifted">영재고</option>
+          <option value="science">과학고</option>
+          <option value="ungraded">무학년</option>
+        </select>
+      </label>
+      <div class="form-row class-time-row">
+        <label>개강일
+          <input id="classStartDate" type="date" required>
+        </label>
+        <label>수업 시각
+          <input id="classStartTime" type="time" required>
+          <span class="time-chips">
+            <button type="button" data-quick-time="12:30">12:30</button>
+            <button type="button" data-quick-time="17:30">17:30</button>
+          </span>
+        </label>
+      </div>
+      <label>차시별 진도 <span class="hint">한 줄이 한 차시입니다</span>
+        <textarea id="lessonLines" rows="12" placeholder="열&#10;비열, 열팽창&#10;중력, 탄성력, 마찰력"></textarea>
+      </label>
+      <div class="dialog-actions split">
+        <button type="button" id="deleteClassBtn" class="danger ghost hidden">수업 삭제</button>
+        <div>
+          <button type="button" data-close="classDialog">취소</button>
+          <button value="save" class="primary">저장</button>
+        </div>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="lessonsDialog" class="wide-dialog">
+    <div class="dialog-head sticky">
+      <div>
+        <p class="eyebrow" id="lessonDialogDay">월요일</p>
+        <h2 id="lessonDialogTitle">수업명</h2>
+      </div>
+      <div class="actions">
+        <button id="storeClassBtn">보관함에 저장</button>
+        <button id="editClassBtn">수업 정보 수정</button>
+        <button class="close-button" data-close="lessonsDialog">×</button>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table class="lesson-table">
+        <thead>
+          <tr>
+            <th>차시</th>
+            <th>진도</th>
+            <th>수업 준비</th>
+            <th>테스트 제작</th>
+            <th>휴강</th>
+            <th>비고</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="lessonTableBody"></tbody>
+      </table>
+    </div>
+    <div class="dialog-actions">
+      <button id="addLessonBtn">+ 차시 추가</button>
+      <button class="primary" data-close="lessonsDialog">완료</button>
+    </div>
+  </dialog>
+
+  <dialog id="pasteDialog">
+    <form method="dialog" id="pasteForm">
+      <div class="dialog-head">
+        <div>
+          <p class="eyebrow">PASTE FROM SHEETS</p>
+          <h2>진도표 붙여넣기</h2>
+        </div>
+        <button type="button" class="close-button" data-close="pasteDialog">×</button>
+      </div>
+      <p class="guide">Google Sheets에서 셀 범위를 복사한 뒤 아래에 붙여넣으세요. 첫 열은 진도로 가져옵니다.</p>
+      <div class="form-row">
+        <label>요일<select id="pasteDay"></select></label>
+        <label>수업 이름<input id="pasteClassName" required placeholder="새 수업 이름"></label>
+      </div>
+      <label>붙여넣은 표
+        <textarea id="pasteArea" rows="12" required placeholder="열&#9;TRUE&#9;FALSE&#10;비열, 열팽창&#9;TRUE&#9;TRUE"></textarea>
+      </label>
+      <p id="pastePreview" class="preview-text">붙여넣으면 가져올 차시 수를 표시합니다.</p>
+      <div class="dialog-actions">
+        <button type="button" data-close="pasteDialog">취소</button>
+        <button value="import" class="primary">수업으로 가져오기</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="quarterDialog">
+    <form method="dialog" id="quarterForm">
+      <div class="dialog-head">
+        <h2 id="quarterDialogTitle">새 분기</h2>
+        <button type="button" class="close-button" data-close="quarterDialog">×</button>
+      </div>
+      <label>분기 이름<input id="quarterName" required maxlength="40" placeholder="예: 2026년 3분기"></label>
+      <div class="dialog-actions split">
+        <button type="button" id="deleteQuarterBtn" class="danger ghost hidden">분기 삭제</button>
+        <div>
+          <button type="button" data-close="quarterDialog">취소</button>
+          <button value="save" class="primary">저장</button>
+        </div>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast" role="status"></div>
+  <script src="app.js"></script>
+</body>
+</html>
