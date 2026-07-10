@@ -302,6 +302,16 @@ textarea { resize: vertical; line-height: 1.5; }
 .lesson-table th:nth-child(8) { width: 190px; }
 .lesson-table th:last-child { width: 43px; }
 .lesson-table input[type="text"] { margin: 0; padding: 8px 9px; }
+.lesson-table .date-cell { vertical-align: top; }
+.lesson-table .date-warning {
+  display: block;
+  min-height: 14px;
+  margin-top: 3px;
+  color: #c83b35;
+  font-size: 10px;
+  font-weight: 750;
+  line-height: 1.25;
+}
 .lesson-table .check-cell { text-align: center; }
 .lesson-table input[type="checkbox"] { width: 18px; height: 18px; margin: 0; accent-color: var(--green); }
 .lesson-table tr.done { background: #f0f7f3; }

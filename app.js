@@ -148,6 +148,26 @@
     return new Date(parts[0], parts[1] - 1, parts[2]);
   }
 
+  function parseLessonDate(value, cls) {
+    var text = String(value || "").trim();
+    if (!text) return null;
+    var full = text.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})$/);
+    if (full) return new Date(Number(full[1]), Number(full[2]) - 1, Number(full[3]));
+    var short = text.match(/^(\d{1,2})[-/.](\d{1,2})$/);
+    if (!short) return null;
+    var start = parseLocalDate(cls.startDate);
+    var year = start ? start.getFullYear() : new Date().getFullYear();
+    return new Date(year, Number(short[1]) - 1, Number(short[2]));
+  }
+
+  function lessonDateWarning(cls, value) {
+    var date = parseLessonDate(value, cls);
+    if (!date) return "";
+    var expected = DAYS.indexOf(cls.day);
+    var actual = (date.getDay() + 6) % 7;
+    return expected >= 0 && actual !== expected ? "수업 요일과 다릅니다" : "";
+  }
+
   function weekSessionDate(cls, today) {
     var date = new Date(today.getFullYear(), today.getMonth(), today.getDate());
     var mondayBased = (date.getDay() + 6) % 7;
@@ -393,9 +413,12 @@
     if (!cls) return;
     $("lessonTableBody").innerHTML = cls.lessons.map(function (lesson, index) {
       var rowClass = lesson.break ? "break-row" : (lesson.ready ? "done" : "");
+      var dateValue = lesson.date || autoLessonDate(cls, index);
+      var warning = lessonDateWarning(cls, dateValue);
       return '<tr class="' + rowClass + '" data-lesson-id="' + lesson.id + '">' +
         "<td><strong>" + (index + 1) + "</strong></td>" +
-        '<td><input type="text" data-field="date" value="' + escapeHtml(lesson.date || autoLessonDate(cls, index)) + '" placeholder="7/10"></td>' +
+        '<td class="date-cell"><input type="text" data-field="date" value="' + escapeHtml(dateValue) + '" placeholder="7/10">' +
+        '<span class="date-warning">' + escapeHtml(warning) + "</span></td>" +
         '<td><input type="text" data-field="topic" value="' + escapeHtml(lesson.topic) + '"></td>' +
         '<td><input type="text" data-field="homework" value="' + escapeHtml(lesson.homework || "") + '" placeholder="과제 범위"></td>' +
         '<td class="check-cell"><input type="checkbox" data-field="ready"' + (lesson.ready ? " checked" : "") + (lesson.break ? " disabled" : "") + "></td>" +
@@ -673,6 +696,10 @@
     var row = e.target.closest("tr");
     var lesson = activeClass().lessons.find(function (l) { return l.id === row.dataset.lessonId; });
     lesson[field] = e.target.value;
+    if (field === "date") {
+      var warning = row.querySelector(".date-warning");
+      if (warning) warning.textContent = lessonDateWarning(activeClass(), e.target.value);
+    }
     saveState();
   });
   $("lessonTableBody").addEventListener("click", function (e) {
