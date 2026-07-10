@@ -24,7 +24,7 @@
   function initialState() {
     var qid = uid();
     return {
-      version: 1,
+      version: 2,
       activeQuarterId: qid,
       hiddenDays: [],
       summaryHidden: false,
@@ -41,45 +41,55 @@
     try {
       var parsed = JSON.parse(localStorage.getItem(STORAGE_KEY));
       if (parsed && Array.isArray(parsed.quarters) && parsed.quarters.length) {
-        if (!Array.isArray(parsed.hiddenDays)) parsed.hiddenDays = [];
-        if (!("summaryHidden" in parsed)) parsed.summaryHidden = false;
-        parsed.quarters.forEach(function (quarter) {
-          quarter.classes.forEach(function (cls) {
-            if (!("startDate" in cls)) cls.startDate = "";
-            if (!("startTime" in cls)) cls.startTime = "";
-            if (!("grade" in cls)) cls.grade = "";
-            if (!("book" in cls)) cls.book = "";
-            cls.lessons.forEach(function (lesson) {
-              if (!("homework" in lesson)) lesson.homework = "";
-              if (!("date" in lesson)) lesson.date = "";
-              if (!("color" in lesson)) lesson.color = "";
-            });
-            fillMissingLessonDates(cls);
-            if (cls.grade === "elementary") cls.grade = "elementary6";
-            if (["high1", "high2", "high3", "other", ""].indexOf(cls.grade) >= 0) cls.grade = "ungraded";
-          });
-        });
-        parsed.templates.forEach(function (template) {
-          if (!("book" in template)) template.book = "";
-          if (!Array.isArray(template.lessons)) {
-            template.lessons = (template.topics || []).map(function (topic) {
-              return { topic: topic, homework: "" };
-            });
-          }
-          template.lessons.forEach(function (lesson) {
-            if (!("homework" in lesson)) lesson.homework = "";
-            if (!("date" in lesson)) lesson.date = "";
-            if (!("color" in lesson)) lesson.color = "";
-          });
-          if (template.grade === "elementary") template.grade = "elementary6";
-          if (!template.grade || ["high1", "high2", "high3", "other"].indexOf(template.grade) >= 0) {
-            template.grade = "ungraded";
-          }
-        });
-        return parsed;
+        return normalizeState(parsed);
       }
     } catch (e) {}
     return initialState();
+  }
+
+  function normalizeLesson(lesson) {
+    if (!("homework" in lesson)) lesson.homework = "";
+    if (!("date" in lesson)) lesson.date = "";
+    if (!("color" in lesson)) lesson.color = "";
+    if (!("topic2" in lesson)) lesson.topic2 = "";
+    if (!("homework2" in lesson)) lesson.homework2 = "";
+    if (!("color2" in lesson)) lesson.color2 = "";
+    return lesson;
+  }
+
+  function normalizeState(data) {
+    if (!Array.isArray(data.hiddenDays)) data.hiddenDays = [];
+    if (!("summaryHidden" in data)) data.summaryHidden = false;
+    if (!Array.isArray(data.templates)) data.templates = [];
+    data.quarters.forEach(function (quarter) {
+      if (!Array.isArray(quarter.classes)) quarter.classes = [];
+      quarter.classes.forEach(function (cls) {
+        if (!("startDate" in cls)) cls.startDate = "";
+        if (!("startTime" in cls)) cls.startTime = "";
+        if (!("grade" in cls)) cls.grade = "";
+        if (!("book" in cls)) cls.book = "";
+        if (!Array.isArray(cls.lessons)) cls.lessons = [];
+        cls.lessons.forEach(normalizeLesson);
+        fillMissingLessonDates(cls);
+        if (cls.grade === "elementary") cls.grade = "elementary6";
+        if (["high1", "high2", "high3", "other", ""].indexOf(cls.grade) >= 0) cls.grade = "ungraded";
+      });
+    });
+    data.templates.forEach(function (template) {
+      if (!("book" in template)) template.book = "";
+      if (!Array.isArray(template.lessons)) {
+        template.lessons = (template.topics || []).map(function (topic) {
+          return { topic: topic, homework: "" };
+        });
+      }
+      template.lessons.forEach(normalizeLesson);
+      if (template.grade === "elementary") template.grade = "elementary6";
+      if (!template.grade || ["high1", "high2", "high3", "other"].indexOf(template.grade) >= 0) {
+        template.grade = "ungraded";
+      }
+    });
+    data.version = 2;
+    return data;
   }
 
   function saveState(message) {
@@ -115,18 +125,17 @@
   }
 
   function makeLesson(topic) {
-    return { id: uid(), topic: topic || "", date: "", homework: "", color: "", ready: false, test: false, break: false, note: "" };
+    return { id: uid(), topic: topic || "", date: "", homework: "", color: "", topic2: "", homework2: "", color2: "", ready: false, test: false, break: false, note: "" };
   }
 
   function makeLessonFromTemplate(item) {
     var lesson = makeLesson(item && item.topic ? item.topic : "");
     lesson.homework = item && item.homework ? item.homework : "";
     lesson.color = item && item.color ? item.color : "";
+    lesson.topic2 = item && item.topic2 ? item.topic2 : "";
+    lesson.homework2 = item && item.homework2 ? item.homework2 : "";
+    lesson.color2 = item && item.color2 ? item.color2 : "";
     return lesson;
-  }
-
-  function splitNonEmptyLines(text) {
-    return text.split(/\r?\n/).map(function (v) { return v.trim(); }).filter(Boolean);
   }
 
   function splitMatchedLines(text) {
@@ -134,14 +143,20 @@
     return text.replace(/\r/g, "").split("\n").map(function (v) { return v.trim(); });
   }
 
+  function splitLessonLines(text) {
+    var lines = splitMatchedLines(text);
+    while (lines.length && !lines[lines.length - 1]) lines.pop();
+    return lines;
+  }
+
   function templateLessonItems(template) {
     if (Array.isArray(template.lessons)) {
       return template.lessons.map(function (lesson) {
-        return { topic: lesson.topic || "", homework: lesson.homework || "", color: lesson.color || "" };
+        return { topic: lesson.topic || "", homework: lesson.homework || "", color: lesson.color || "", topic2: lesson.topic2 || "", homework2: lesson.homework2 || "", color2: lesson.color2 || "" };
       });
     }
     return (template.topics || []).map(function (topic) {
-      return { topic: topic, homework: "", color: "" };
+      return { topic: topic, homework: "", color: "", topic2: "", homework2: "", color2: "" };
     });
   }
 
@@ -244,23 +259,24 @@
     return item ? item.value : "";
   }
 
-  function paletteButtonHtml(lesson) {
-    var color = lesson.color || "";
+  function paletteButtonHtml(lesson, setNumber) {
+    var colorField = setNumber === 2 ? "color2" : "color";
+    var color = lesson[colorField] || "";
     var swatches = LESSON_COLORS.map(function (item) {
       var style = item.value ? ' style="background:' + item.value + '"' : "";
       var selected = item.key === color ? " selected" : "";
       return '<button type="button" class="palette-swatch' + selected + (item.key ? "" : " no-color") +
-        '" data-lesson-color="' + item.key + '" title="' + item.label + '"' + style + "></button>";
+        '" data-lesson-color="' + item.key + '" data-color-set="' + setNumber + '" title="' + item.label + '"' + style + "></button>";
     }).join("");
-    return '<button type="button" class="palette-button" data-palette-toggle title="행 배경색 선택" aria-label="행 배경색 선택">' +
+    return '<button type="button" class="palette-button" data-palette-toggle data-color-set="' + setNumber + '" title="수업 ' + setNumber + ' 색상 선택" aria-label="수업 ' + setNumber + ' 색상 선택">' +
       '<svg viewBox="0 0 18 18" aria-hidden="true"><path d="M9 2.4a6.6 6.6 0 0 0 0 13.2h1.1c.9 0 1.4-.9.9-1.6-.4-.7.1-1.5.9-1.5h1A3.4 3.4 0 0 0 16.3 9 6.9 6.9 0 0 0 9 2.4Z" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="5.8" cy="8" r="1" fill="currentColor"/><circle cx="8.2" cy="5.9" r="1" fill="currentColor"/><circle cx="11.2" cy="6.5" r="1" fill="currentColor"/><circle cx="12.3" cy="9.4" r="1" fill="currentColor"/></svg>' +
       "</button>" +
       '<div class="palette-popover hidden">' + swatches + "</div>";
   }
 
-  function closeLessonPalettes(exceptRow) {
+  function closeLessonPalettes(exceptMenu) {
     document.querySelectorAll(".palette-popover:not(.hidden)").forEach(function (menu) {
-      if (!exceptRow || !exceptRow.contains(menu)) menu.classList.add("hidden");
+      if (!exceptMenu || menu !== exceptMenu) menu.classList.add("hidden");
     });
   }
 
@@ -366,7 +382,8 @@
       (cls.book ? ' <span class="title-separator">·</span> <span class="book-name">' + escapeHtml(cls.book) + "</span>" : "") +
       "</h3>" +
       '<span class="class-time">' + escapeHtml((cls.startTime || "시각 미설정") + " · " + metaText) + "</span>" +
-      '<p class="current-topic">' + escapeHtml(lesson ? (lesson.topic || "진도 미입력") : "등록된 차시 없음") + "</p>" +
+      '<div class="current-topics"><p>' + escapeHtml(lesson ? (lesson.topic || "진도 미입력") : "등록된 차시 없음") + "</p>" +
+      (lesson && lesson.topic2 ? '<p class="secondary-topic"><span>수업 2</span>' + escapeHtml(lesson.topic2) + "</p>" : "") + "</div>" +
       '<div class="card-checks">' +
       '<label class="' + (lesson && lesson.ready ? "checked" : "") + '"><input type="checkbox" data-card-check="ready"' +
       (lesson && lesson.ready ? " checked" : "") + (inactive || lesson.break ? " disabled" : "") +
@@ -384,7 +401,9 @@
     $("templateGrid").classList.toggle("hidden", state.templates.length === 0);
     $("templateGrid").innerHTML = state.templates.map(function (t) {
       var items = templateLessonItems(t);
-      var preview = items.slice(0, 3).map(function (item) { return item.topic; }).join(" · ");
+      var preview = items.slice(0, 3).map(function (item) {
+        return item.topic2 ? (item.topic || "-") + " / " + item.topic2 : item.topic;
+      }).join(" · ");
       return '<article class="template-card">' +
         '<span class="tag">' + items.length + '차시</span>' +
         "<h3>" + escapeHtml(t.name) + "</h3>" +
@@ -405,6 +424,8 @@
     $("classStartTime").value = cls ? (cls.startTime || "") : "10:00";
     $("lessonLines").value = cls ? cls.lessons.map(function (l) { return l.topic; }).join("\n") : "";
     $("homeworkLines").value = cls ? cls.lessons.map(function (l) { return l.homework || ""; }).join("\n") : "";
+    $("lessonLines2").value = cls ? cls.lessons.map(function (l) { return l.topic2 || ""; }).join("\n") : "";
+    $("homeworkLines2").value = cls ? cls.lessons.map(function (l) { return l.homework2 || ""; }).join("\n") : "";
     $("deleteClassBtn").classList.toggle("hidden", !cls);
     $("classDialog").showModal();
     setTimeout(function () { $("className").focus(); }, 50);
@@ -413,8 +434,11 @@
   function saveClassFromForm() {
     var name = $("className").value.trim();
     if (!name) return;
-    var topics = splitNonEmptyLines($("lessonLines").value);
+    var topics = splitLessonLines($("lessonLines").value);
     var homeworks = splitMatchedLines($("homeworkLines").value);
+    var topics2 = splitLessonLines($("lessonLines2").value);
+    var homeworks2 = splitMatchedLines($("homeworkLines2").value);
+    var lessonCount = Math.max(topics.length, topics2.length);
     var classes = currentQuarter().classes;
     if (editingClassId) {
       var cls = classes.find(function (c) { return c.id === editingClassId; });
@@ -425,14 +449,17 @@
       cls.book = $("classBook").value.trim();
       cls.startDate = $("classStartDate").value;
       cls.startTime = $("classStartTime").value;
-      cls.lessons = topics.map(function (topic, index) {
+      cls.lessons = Array.from({ length: lessonCount }, function (_, index) {
         var old = cls.lessons[index];
+        var topic = topics[index] || "";
         var homework = index < homeworks.length ? homeworks[index] : (old ? old.homework || "" : "");
+        var topic2 = topics2[index] || "";
+        var homework2 = index < homeworks2.length ? homeworks2[index] : (old ? old.homework2 || "" : "");
         var oldAutoDate = autoLessonDate({ startDate: previousStartDate }, index);
         var shouldRefreshDate = !old || !old.date || old.date === oldAutoDate;
         var date = shouldRefreshDate ? autoLessonDate(cls, index) : old.date;
-        return old ? Object.assign({}, old, { topic: topic, date: date, homework: homework }) :
-          Object.assign(makeLesson(topic), { date: autoLessonDate(cls, index), homework: homework });
+        return old ? Object.assign({}, old, { topic: topic, date: date, homework: homework, topic2: topic2, homework2: homework2 }) :
+          Object.assign(makeLesson(topic), { date: autoLessonDate(cls, index), homework: homework, topic2: topic2, homework2: homework2 });
       });
       fillMissingLessonDates(cls);
     } else {
@@ -441,8 +468,8 @@
         grade: $("classGrade").value,
         book: $("classBook").value.trim(),
         startDate: $("classStartDate").value, startTime: $("classStartTime").value,
-        lessons: topics.map(function (topic, index) {
-          return Object.assign(makeLesson(topic), { homework: homeworks[index] || "" });
+        lessons: Array.from({ length: lessonCount }, function (_, index) {
+          return Object.assign(makeLesson(topics[index] || ""), { homework: homeworks[index] || "", topic2: topics2[index] || "", homework2: homeworks2[index] || "" });
         })
       };
       fillMissingLessonDates(newClass);
@@ -470,12 +497,13 @@
       var dateValue = lesson.date || autoLessonDate(cls, index);
       var warning = lessonDateWarning(cls, dateValue);
       return '<tr class="' + rowClass + '" data-lesson-id="' + lesson.id + '">' +
-        '<td class="lesson-index-cell"><div class="lesson-index-wrap"><strong>' + (index + 1) + "</strong>" +
-        paletteButtonHtml(lesson) + "</div></td>" +
+        '<td class="lesson-index-cell"><strong>' + (index + 1) + "</strong></td>" +
         '<td class="date-cell"><input type="text" data-field="date" value="' + escapeHtml(dateValue) + '" placeholder="7/10">' +
         '<span class="date-warning">' + escapeHtml(warning) + "</span></td>" +
-        '<td class="' + lessonColorClass(lesson.color) + '"><input type="text" data-field="topic" value="' + escapeHtml(lesson.topic) + '"></td>' +
-        '<td><input type="text" data-field="homework" value="' + escapeHtml(lesson.homework || "") + '" placeholder="과제 범위"></td>' +
+        '<td class="lesson-set-cell ' + lessonColorClass(lesson.color) + '"><div class="lesson-set-input">' + paletteButtonHtml(lesson, 1) + '<input type="text" data-field="topic" value="' + escapeHtml(lesson.topic) + '" placeholder="진도 1"></div></td>' +
+        '<td class="' + lessonColorClass(lesson.color) + '"><input type="text" data-field="homework" value="' + escapeHtml(lesson.homework || "") + '" placeholder="과제 범위 1"></td>' +
+        '<td class="lesson-set-cell second-set ' + lessonColorClass(lesson.color2) + '"><div class="lesson-set-input">' + paletteButtonHtml(lesson, 2) + '<input type="text" data-field="topic2" value="' + escapeHtml(lesson.topic2 || "") + '" placeholder="진도 2"></div></td>' +
+        '<td class="second-set ' + lessonColorClass(lesson.color2) + '"><input type="text" data-field="homework2" value="' + escapeHtml(lesson.homework2 || "") + '" placeholder="과제 범위 2"></td>' +
         '<td class="check-cell"><input type="checkbox" data-field="ready"' + (lesson.ready ? " checked" : "") + (lesson.break ? " disabled" : "") + "></td>" +
         '<td class="check-cell">' + (index === 0 ? '<span class="test-na">첫 차시 없음</span>' :
           '<input type="checkbox" data-field="test"' + (lesson.test ? " checked" : "") + (lesson.break ? " disabled" : "") + ">") + "</td>" +
@@ -485,10 +513,17 @@
     }).join("");
   }
 
+  function templateLessonData(lesson) {
+    return {
+      topic: lesson.topic || "", homework: lesson.homework || "", color: lesson.color || "",
+      topic2: lesson.topic2 || "", homework2: lesson.homework2 || "", color2: lesson.color2 || ""
+    };
+  }
+
   function storeTemplate(cls) {
     var existing = state.templates.find(function (t) { return t.name === cls.name; });
     var topics = cls.lessons.map(function (l) { return l.topic; });
-    var lessons = cls.lessons.map(function (l) { return { topic: l.topic || "", homework: l.homework || "", color: l.color || "" }; });
+    var lessons = cls.lessons.map(templateLessonData);
     if (existing) {
       existing.topics = topics;
       existing.lessons = lessons;
@@ -508,16 +543,23 @@
     return escapeHtml(value || "").replace(/\n/g, "<br>");
   }
 
+  function printLessonSetCells(lesson, setNumber, emptyFallback) {
+    var suffix = setNumber === 2 ? "2" : "";
+    var color = lesson.break ? "" : lessonColorValue(lesson["color" + suffix]);
+    var style = color ? ' style="background:' + color + '"' : "";
+    var topic = lesson["topic" + suffix] || emptyFallback || "";
+    return "<td" + style + ">" + escapePrintText(topic) + "</td>" +
+      "<td" + style + ">" + escapePrintText(lesson["homework" + suffix] || "") + "</td>";
+  }
+
   function printClass(cls) {
     if (!cls) return;
     var rows = cls.lessons.map(function (lesson, index) {
-      var color = lesson.break ? "" : lessonColorValue(lesson.color);
-      var style = color ? ' style="background:' + color + '"' : "";
       return '<tr class="' + (lesson.break ? "break-row" : "") + '">' +
         "<td>" + (index + 1) + "</td>" +
         "<td>" + escapePrintText(lesson.date || autoLessonDate(cls, index)) + "</td>" +
-        "<td" + style + ">" + escapePrintText(lesson.topic || "진도 미입력") + "</td>" +
-        "<td>" + escapePrintText(lesson.homework || "") + "</td>" +
+        printLessonSetCells(lesson, 1, "진도 미입력") +
+        printLessonSetCells(lesson, 2, "") +
         "</tr>";
     }).join("");
     var title = escapeHtml(cls.name);
@@ -540,8 +582,8 @@
       "th{background:#edf4f0;color:#234536;font-size:12px;}" +
       "td:first-child,th:first-child{width:42px;text-align:center;}" +
       "td:nth-child(2),th:nth-child(2){width:60px;text-align:center;}" +
-      "td:nth-child(3),th:nth-child(3){width:58%;white-space:nowrap;}" +
-      "td:nth-child(4),th:nth-child(4){width:28%;}" +
+      "td:nth-child(3),th:nth-child(3),td:nth-child(5),th:nth-child(5){width:27%;}" +
+      "td:nth-child(4),th:nth-child(4),td:nth-child(6),th:nth-child(6){width:18%;}" +
       "tr.break-row td{background:#e9ecea;color:#6d7671;}" +
       "@media screen{body{padding:24px;background:#eef2ef}.sheet{box-sizing:border-box;max-width:1120px;margin:0 auto;padding:24px;background:white;box-shadow:0 18px 50px rgba(25,43,34,.12);}}" +
       "@media print{body{padding:0}.sheet{max-width:none}}" +
@@ -552,7 +594,7 @@
       "<div><span>수업 요일/시간</span><strong>" + escapeHtml(cls.day + "요일 " + (cls.startTime || "시각 미설정")) + "</strong></div>" +
       "<div><span>개강일</span><strong>" + escapeHtml(cls.startDate || "-") + "</strong></div>" +
       "</section>" +
-      "<table><thead><tr><th>차시</th><th>날짜</th><th>차시별 진도</th><th>과제 범위</th></tr></thead><tbody>" + rows + "</tbody></table>" +
+      "<table><thead><tr><th>차시</th><th>날짜</th><th>진도 1</th><th>과제 범위 1</th><th>진도 2</th><th>과제 범위 2</th></tr></thead><tbody>" + rows + "</tbody></table>" +
       "<script>window.addEventListener('load',function(){window.focus();setTimeout(function(){window.print();},150);});<\/script>" +
       "</main></body></html>";
     var win = window.open("", "_blank");
@@ -567,13 +609,11 @@
 
   function compactRowsHtml(cls) {
     return cls.lessons.map(function (lesson, index) {
-      var color = lesson.break ? "" : lessonColorValue(lesson.color);
-      var style = color ? ' style="background:' + color + '"' : "";
       return '<tr class="' + (lesson.break ? "break-row" : "") + '">' +
         "<td>" + (index + 1) + "</td>" +
         "<td>" + escapePrintText(lesson.date || autoLessonDate(cls, index)) + "</td>" +
-        "<td" + style + ">" + escapePrintText(lesson.topic || "") + "</td>" +
-        "<td>" + escapePrintText(lesson.homework || "") + "</td>" +
+        printLessonSetCells(lesson, 1, "") +
+        printLessonSetCells(lesson, 2, "") +
         "</tr>";
     }).join("");
   }
@@ -592,7 +632,7 @@
         '<span><b>요일·시간</b> ' + escapeHtml(cls.day + " " + (cls.startTime || "-")) + "</span>" +
         '<span><b>개강일</b> ' + escapeHtml(cls.startDate || "-") + "</span>" +
         "</div></header>" +
-        '<table><thead><tr><th>차시</th><th>날짜</th><th>차시별 진도</th><th>과제 범위</th></tr></thead><tbody>' +
+        '<table><thead><tr><th>차시</th><th>날짜</th><th>진도 1</th><th>과제 1</th><th>진도 2</th><th>과제 2</th></tr></thead><tbody>' +
         compactRowsHtml(cls) + "</tbody></table></section>";
     }).join("");
     var title = selectedClassIds.size ? "선택 클래스 진도표" : "전체 클래스 진도표";
@@ -617,8 +657,8 @@
       "th{background:#edf4f0;color:#234536;font-weight:800;}" +
       "td:first-child,th:first-child{width:30px;text-align:center;}" +
       "td:nth-child(2),th:nth-child(2){width:42px;text-align:center;}" +
-      "td:nth-child(3),th:nth-child(3){width:52%;}" +
-      "td:nth-child(4),th:nth-child(4){width:35%;}" +
+      "td:nth-child(3),th:nth-child(3),td:nth-child(5),th:nth-child(5){width:27%;}" +
+      "td:nth-child(4),th:nth-child(4),td:nth-child(6),th:nth-child(6){width:17%;}" +
       "tr.break-row td{background:#e9ecea;color:#6d7671;}" +
       "@media screen{body{padding:24px;background:#eef2ef}.sheet{max-width:794px;margin:0 auto;padding:24px;background:white;box-shadow:0 18px 50px rgba(25,43,34,.12);}}" +
       "@media print{body{padding:0}.sheet{max-width:none}}" +
@@ -643,7 +683,7 @@
   }
 
   document.addEventListener("click", function (e) {
-    if (!e.target.closest(".lesson-index-cell")) closeLessonPalettes();
+    if (!e.target.closest(".lesson-set-cell")) closeLessonPalettes();
     var close = e.target.closest("[data-close]");
     if (close) $(close.dataset.close).close();
     if (e.target.closest('[data-action="add-class"]')) openClassDialog();
@@ -810,7 +850,7 @@
     currentQuarter().classes.forEach(function (cls) {
       var existing = state.templates.find(function (t) { return t.name === cls.name; });
       var topics = cls.lessons.map(function (l) { return l.topic; });
-      var lessons = cls.lessons.map(function (l) { return { topic: l.topic || "", homework: l.homework || "", color: l.color || "" }; });
+      var lessons = cls.lessons.map(templateLessonData);
       if (existing) {
         existing.topics = topics;
         existing.lessons = lessons;
@@ -841,7 +881,7 @@
   });
   $("lessonTableBody").addEventListener("input", function (e) {
     var field = e.target.dataset.field;
-    if (field !== "date" && field !== "topic" && field !== "homework" && field !== "note") return;
+    if (["date", "topic", "homework", "topic2", "homework2", "note"].indexOf(field) < 0) return;
     var row = e.target.closest("tr");
     var lesson = activeClass().lessons.find(function (l) { return l.id === row.dataset.lessonId; });
     lesson[field] = e.target.value;
@@ -854,10 +894,9 @@
   $("lessonTableBody").addEventListener("click", function (e) {
     var paletteToggle = e.target.closest("[data-palette-toggle]");
     if (paletteToggle) {
-      var paletteRow = paletteToggle.closest("tr");
-      var menu = paletteRow.querySelector(".palette-popover");
+      var menu = paletteToggle.parentElement.querySelector(".palette-popover");
       var willOpen = menu.classList.contains("hidden");
-      closeLessonPalettes(paletteRow);
+      closeLessonPalettes(menu);
       menu.classList.toggle("hidden", !willOpen);
       return;
     }
@@ -865,7 +904,7 @@
     if (swatch) {
       var colorRow = swatch.closest("tr");
       var colorLesson = activeClass().lessons.find(function (l) { return l.id === colorRow.dataset.lessonId; });
-      colorLesson.color = swatch.dataset.lessonColor;
+      colorLesson[swatch.dataset.colorSet === "2" ? "color2" : "color"] = swatch.dataset.lessonColor;
       saveState();
       renderLessonRows();
       return;
@@ -921,7 +960,9 @@
       if (cells.length > 1) lesson.ready = bool(cells[1]);
       if (cells.length > 2 && index > 0) lesson.test = bool(cells[2]);
       if (cells.length > 3) lesson.homework = cells[3] || "";
-      if (cells.length > 4) lesson.note = cells.slice(4).join(" ");
+      if (cells.length > 4) lesson.note = cells[4] || "";
+      if (cells.length > 5) lesson.topic2 = cells[5] || "";
+      if (cells.length > 6) lesson.homework2 = cells[6] || "";
       return lesson;
     });
     var pastedClass = {
@@ -957,7 +998,7 @@
         var data = JSON.parse(reader.result);
         if (!data.quarters || !Array.isArray(data.templates)) throw new Error("invalid");
         if (confirm("현재 데이터를 백업 파일로 교체할까요?")) {
-          state = data;
+          state = normalizeState(data);
           saveState("백업을 복원했습니다.");
           render();
         }

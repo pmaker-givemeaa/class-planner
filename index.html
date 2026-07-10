@@ -158,12 +158,28 @@
           </span>
         </label>
       </div>
+      <div class="lesson-set-heading">
+        <strong>수업 1</strong>
+        <span>기존 4시간 수업은 이쪽만 입력해도 됩니다.</span>
+      </div>
       <div class="lesson-bulk-row">
-        <label>차시별 진도 <span class="hint">한 줄이 한 차시입니다</span>
+        <label>차시별 진도 1 <span class="hint">한 줄이 한 차시입니다</span>
           <textarea id="lessonLines" rows="12" placeholder="열&#10;비열, 열팽창&#10;중력, 탄성력, 마찰력"></textarea>
         </label>
-        <label>과제 범위 <span class="hint">진도와 같은 줄 번호로 매칭됩니다</span>
+        <label>과제 범위 1 <span class="hint">진도와 같은 줄 번호로 매칭됩니다</span>
           <textarea id="homeworkLines" rows="12" placeholder="p.12~15&#10;p.18 1~8번&#10;프린트 2쪽"></textarea>
+        </label>
+      </div>
+      <div class="lesson-set-heading secondary">
+        <strong>수업 2</strong>
+        <span>2시간씩 나눠 진행하는 클래스만 입력하세요.</span>
+      </div>
+      <div class="lesson-bulk-row">
+        <label>차시별 진도 2 <span class="hint">수업 1과 같은 차시로 매칭됩니다</span>
+          <textarea id="lessonLines2" rows="12" placeholder="두 번째 선생님의 차시별 진도"></textarea>
+        </label>
+        <label>과제 범위 2 <span class="hint">진도 2와 같은 줄 번호로 매칭됩니다</span>
+          <textarea id="homeworkLines2" rows="12" placeholder="두 번째 선생님의 차시별 과제"></textarea>
         </label>
       </div>
       <div class="dialog-actions split">
@@ -192,16 +208,22 @@
     <div class="table-wrap">
       <table class="lesson-table">
         <thead>
-          <tr>
-            <th>차시</th>
-            <th>날짜</th>
+          <tr class="lesson-group-head">
+            <th rowspan="2">차시</th>
+            <th rowspan="2">날짜</th>
+            <th colspan="2">수업 1</th>
+            <th colspan="2">수업 2 <span>선택 입력</span></th>
+            <th rowspan="2">수업 준비</th>
+            <th rowspan="2">테스트 제작</th>
+            <th rowspan="2">휴강</th>
+            <th rowspan="2">비고</th>
+            <th rowspan="2"></th>
+          </tr>
+          <tr class="lesson-sub-head">
             <th>진도</th>
             <th>과제 범위</th>
-            <th>수업 준비</th>
-            <th>테스트 제작</th>
-            <th>휴강</th>
-            <th>비고</th>
-            <th></th>
+            <th>진도</th>
+            <th>과제 범위</th>
           </tr>
         </thead>
         <tbody id="lessonTableBody"></tbody>
@@ -222,13 +244,13 @@
         </div>
         <button type="button" class="close-button" data-close="pasteDialog">×</button>
       </div>
-      <p class="guide">Google Sheets에서 셀 범위를 복사한 뒤 아래에 붙여넣으세요. 첫 열은 진도로 가져옵니다.</p>
+      <p class="guide">열 순서: 진도 1, 준비, 테스트, 과제 1, 비고, 진도 2, 과제 2. 첫 열만 있어도 가져올 수 있습니다.</p>
       <div class="form-row">
         <label>요일<select id="pasteDay"></select></label>
         <label>수업 이름<input id="pasteClassName" required placeholder="새 수업 이름"></label>
       </div>
       <label>붙여넣은 표
-        <textarea id="pasteArea" rows="12" required placeholder="열&#9;TRUE&#9;FALSE&#10;비열, 열팽창&#9;TRUE&#9;TRUE"></textarea>
+        <textarea id="pasteArea" rows="12" required placeholder="열&#9;TRUE&#9;FALSE&#9;p.12~15&#9;&#9;열의 이동&#9;프린트 2쪽"></textarea>
       </label>
       <p id="pastePreview" class="preview-text">붙여넣으면 가져올 차시 수를 표시합니다.</p>
       <div class="dialog-actions">
