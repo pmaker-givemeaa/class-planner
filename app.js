@@ -5,6 +5,15 @@
   var DAYS = ["월", "화", "수", "목", "금", "토", "일"];
   var $ = function (id) { return document.getElementById(id); };
   var uid = function () { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); };
+  var LESSON_COLORS = [
+    { key: "", label: "없음", value: "" },
+    { key: "yellow", label: "연노랑", value: "#fff6c7" },
+    { key: "green", label: "연초록", value: "#ddf4df" },
+    { key: "blue", label: "연하늘", value: "#dff2ff" },
+    { key: "pink", label: "연분홍", value: "#ffe3ef" },
+    { key: "purple", label: "연보라", value: "#eee4ff" },
+    { key: "orange", label: "연주황", value: "#ffe8d2" }
+  ];
   var state = loadState();
   var activeClassId = null;
   var editingClassId = null;
@@ -42,6 +51,7 @@
             cls.lessons.forEach(function (lesson) {
               if (!("homework" in lesson)) lesson.homework = "";
               if (!("date" in lesson)) lesson.date = "";
+              if (!("color" in lesson)) lesson.color = "";
             });
             fillMissingLessonDates(cls);
             if (cls.grade === "elementary") cls.grade = "elementary6";
@@ -58,6 +68,7 @@
           template.lessons.forEach(function (lesson) {
             if (!("homework" in lesson)) lesson.homework = "";
             if (!("date" in lesson)) lesson.date = "";
+            if (!("color" in lesson)) lesson.color = "";
           });
           if (template.grade === "elementary") template.grade = "elementary6";
           if (!template.grade || ["high1", "high2", "high3", "other"].indexOf(template.grade) >= 0) {
@@ -98,12 +109,13 @@
   }
 
   function makeLesson(topic) {
-    return { id: uid(), topic: topic || "", date: "", homework: "", ready: false, test: false, break: false, note: "" };
+    return { id: uid(), topic: topic || "", date: "", homework: "", color: "", ready: false, test: false, break: false, note: "" };
   }
 
   function makeLessonFromTemplate(item) {
     var lesson = makeLesson(item && item.topic ? item.topic : "");
     lesson.homework = item && item.homework ? item.homework : "";
+    lesson.color = item && item.color ? item.color : "";
     return lesson;
   }
 
@@ -119,11 +131,11 @@
   function templateLessonItems(template) {
     if (Array.isArray(template.lessons)) {
       return template.lessons.map(function (lesson) {
-        return { topic: lesson.topic || "", homework: lesson.homework || "" };
+        return { topic: lesson.topic || "", homework: lesson.homework || "", color: lesson.color || "" };
       });
     }
     return (template.topics || []).map(function (topic) {
-      return { topic: topic, homework: "" };
+      return { topic: topic, homework: "", color: "" };
     });
   }
 
@@ -215,6 +227,35 @@
     return String(value == null ? "" : value)
       .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+  }
+
+  function lessonColorClass(color) {
+    return color ? " lesson-color-" + color : "";
+  }
+
+  function lessonColorValue(color) {
+    var item = LESSON_COLORS.find(function (candidate) { return candidate.key === color; });
+    return item ? item.value : "";
+  }
+
+  function paletteButtonHtml(lesson) {
+    var color = lesson.color || "";
+    var swatches = LESSON_COLORS.map(function (item) {
+      var style = item.value ? ' style="background:' + item.value + '"' : "";
+      var selected = item.key === color ? " selected" : "";
+      return '<button type="button" class="palette-swatch' + selected + (item.key ? "" : " no-color") +
+        '" data-lesson-color="' + item.key + '" title="' + item.label + '"' + style + "></button>";
+    }).join("");
+    return '<button type="button" class="palette-button" data-palette-toggle title="행 배경색 선택" aria-label="행 배경색 선택">' +
+      '<svg viewBox="0 0 18 18" aria-hidden="true"><path d="M9 2.4a6.6 6.6 0 0 0 0 13.2h1.1c.9 0 1.4-.9.9-1.6-.4-.7.1-1.5.9-1.5h1A3.4 3.4 0 0 0 16.3 9 6.9 6.9 0 0 0 9 2.4Z" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="5.8" cy="8" r="1" fill="currentColor"/><circle cx="8.2" cy="5.9" r="1" fill="currentColor"/><circle cx="11.2" cy="6.5" r="1" fill="currentColor"/><circle cx="12.3" cy="9.4" r="1" fill="currentColor"/></svg>' +
+      "</button>" +
+      '<div class="palette-popover hidden">' + swatches + "</div>";
+  }
+
+  function closeLessonPalettes(exceptRow) {
+    document.querySelectorAll(".palette-popover:not(.hidden)").forEach(function (menu) {
+      if (!exceptRow || !exceptRow.contains(menu)) menu.classList.add("hidden");
+    });
   }
 
   function toast(message) {
@@ -412,11 +453,12 @@
     var cls = activeClass();
     if (!cls) return;
     $("lessonTableBody").innerHTML = cls.lessons.map(function (lesson, index) {
-      var rowClass = lesson.break ? "break-row" : (lesson.ready ? "done" : "");
+      var rowClass = (lesson.break ? "break-row" : (lesson.ready ? "done" : "")) + lessonColorClass(lesson.color);
       var dateValue = lesson.date || autoLessonDate(cls, index);
       var warning = lessonDateWarning(cls, dateValue);
       return '<tr class="' + rowClass + '" data-lesson-id="' + lesson.id + '">' +
-        "<td><strong>" + (index + 1) + "</strong></td>" +
+        '<td class="lesson-index-cell"><div class="lesson-index-wrap"><strong>' + (index + 1) + "</strong>" +
+        paletteButtonHtml(lesson) + "</div></td>" +
         '<td class="date-cell"><input type="text" data-field="date" value="' + escapeHtml(dateValue) + '" placeholder="7/10">' +
         '<span class="date-warning">' + escapeHtml(warning) + "</span></td>" +
         '<td><input type="text" data-field="topic" value="' + escapeHtml(lesson.topic) + '"></td>' +
@@ -433,7 +475,7 @@
   function storeTemplate(cls) {
     var existing = state.templates.find(function (t) { return t.name === cls.name; });
     var topics = cls.lessons.map(function (l) { return l.topic; });
-    var lessons = cls.lessons.map(function (l) { return { topic: l.topic || "", homework: l.homework || "" }; });
+    var lessons = cls.lessons.map(function (l) { return { topic: l.topic || "", homework: l.homework || "", color: l.color || "" }; });
     if (existing) {
       existing.topics = topics;
       existing.lessons = lessons;
@@ -456,7 +498,9 @@
   function printClass(cls) {
     if (!cls) return;
     var rows = cls.lessons.map(function (lesson, index) {
-      return '<tr class="' + (lesson.break ? "break-row" : "") + '">' +
+      var color = lesson.break ? "" : lessonColorValue(lesson.color);
+      var style = color ? ' style="background:' + color + '"' : "";
+      return '<tr class="' + (lesson.break ? "break-row" : "") + '"' + style + ">" +
         "<td>" + (index + 1) + "</td>" +
         "<td>" + escapePrintText(lesson.date || autoLessonDate(cls, index)) + "</td>" +
         "<td>" + escapePrintText(lesson.topic || "진도 미입력") + "</td>" +
@@ -469,6 +513,7 @@
       "@page{size:A4 landscape;margin:10mm;}" +
       "body{margin:0;padding:0;color:#17211d;font-family:Pretendard,'Noto Sans KR','Apple SD Gothic Neo',system-ui,sans-serif;}" +
       ".sheet{width:100%;}" +
+      "*{-webkit-print-color-adjust:exact;print-color-adjust:exact;}" +
       ".eyebrow{margin:0 0 8px;color:#567064;font-size:11px;font-weight:800;letter-spacing:1.5px;}" +
       "h1{margin:0 0 8px;font-size:24px;letter-spacing:-.7px;}" +
       ".meta{display:flex;align-items:stretch;gap:7px;margin:14px 0 16px;}" +
@@ -482,6 +527,7 @@
       "td:nth-child(2),th:nth-child(2){width:60px;text-align:center;}" +
       "td:nth-child(3),th:nth-child(3){width:58%;white-space:nowrap;}" +
       "td:nth-child(4),th:nth-child(4){width:28%;}" +
+      "tr[style] td{background:inherit;}" +
       "tr.break-row td{background:#e9ecea;color:#6d7671;}" +
       "@media screen{body{padding:24px;background:#eef2ef}.sheet{box-sizing:border-box;max-width:1120px;margin:0 auto;padding:24px;background:white;box-shadow:0 18px 50px rgba(25,43,34,.12);}}" +
       "@media print{body{padding:0}.sheet{max-width:none}}" +
@@ -513,6 +559,7 @@
   }
 
   document.addEventListener("click", function (e) {
+    if (!e.target.closest(".lesson-index-cell")) closeLessonPalettes();
     var close = e.target.closest("[data-close]");
     if (close) $(close.dataset.close).close();
     if (e.target.closest('[data-action="add-class"]')) openClassDialog();
@@ -661,7 +708,7 @@
     currentQuarter().classes.forEach(function (cls) {
       var existing = state.templates.find(function (t) { return t.name === cls.name; });
       var topics = cls.lessons.map(function (l) { return l.topic; });
-      var lessons = cls.lessons.map(function (l) { return { topic: l.topic || "", homework: l.homework || "" }; });
+      var lessons = cls.lessons.map(function (l) { return { topic: l.topic || "", homework: l.homework || "", color: l.color || "" }; });
       if (existing) {
         existing.topics = topics;
         existing.lessons = lessons;
@@ -703,6 +750,24 @@
     saveState();
   });
   $("lessonTableBody").addEventListener("click", function (e) {
+    var paletteToggle = e.target.closest("[data-palette-toggle]");
+    if (paletteToggle) {
+      var paletteRow = paletteToggle.closest("tr");
+      var menu = paletteRow.querySelector(".palette-popover");
+      var willOpen = menu.classList.contains("hidden");
+      closeLessonPalettes(paletteRow);
+      menu.classList.toggle("hidden", !willOpen);
+      return;
+    }
+    var swatch = e.target.closest("[data-lesson-color]");
+    if (swatch) {
+      var colorRow = swatch.closest("tr");
+      var colorLesson = activeClass().lessons.find(function (l) { return l.id === colorRow.dataset.lessonId; });
+      colorLesson.color = swatch.dataset.lessonColor;
+      saveState();
+      renderLessonRows();
+      return;
+    }
     if (!e.target.classList.contains("row-delete")) return;
     var row = e.target.closest("tr");
     activeClass().lessons = activeClass().lessons.filter(function (l) { return l.id !== row.dataset.lessonId; });

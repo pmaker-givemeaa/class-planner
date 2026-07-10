@@ -302,6 +302,47 @@ textarea { resize: vertical; line-height: 1.5; }
 .lesson-table th:nth-child(8) { width: 190px; }
 .lesson-table th:last-child { width: 43px; }
 .lesson-table input[type="text"] { margin: 0; padding: 8px 9px; }
+.lesson-table .lesson-index-cell { position: relative; vertical-align: top; }
+.lesson-index-wrap { display: flex; align-items: center; justify-content: center; gap: 4px; }
+.palette-button {
+  width: 20px;
+  height: 20px;
+  padding: 2px;
+  border: 1px solid #c8d2cc;
+  border-radius: 50%;
+  color: #66746c;
+  background: rgba(255, 255, 255, .72);
+}
+.palette-button:hover { color: var(--green); border-color: #9db0a5; background: white; }
+.palette-button svg { display: block; width: 14px; height: 14px; }
+.palette-popover {
+  position: absolute;
+  top: 29px;
+  left: 8px;
+  z-index: 5;
+  display: grid;
+  grid-template-columns: repeat(4, 22px);
+  gap: 5px;
+  padding: 7px;
+  border: 1px solid #d5ded8;
+  border-radius: 10px;
+  background: white;
+  box-shadow: 0 10px 24px rgba(10, 28, 19, .18);
+}
+.palette-swatch {
+  position: relative;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid #bac7c0;
+  border-radius: 50%;
+}
+.palette-swatch.no-color {
+  background:
+    linear-gradient(135deg, transparent 45%, #c8453f 47%, #c8453f 53%, transparent 55%),
+    white;
+}
+.palette-swatch.selected { outline: 2px solid var(--green); outline-offset: 1px; }
 .lesson-table .date-cell { vertical-align: top; }
 .lesson-table .date-warning {
   display: block;
@@ -315,6 +356,12 @@ textarea { resize: vertical; line-height: 1.5; }
 .lesson-table .check-cell { text-align: center; }
 .lesson-table input[type="checkbox"] { width: 18px; height: 18px; margin: 0; accent-color: var(--green); }
 .lesson-table tr.done { background: #f0f7f3; }
+.lesson-table tr.lesson-color-yellow { background: #fff6c7; }
+.lesson-table tr.lesson-color-green { background: #ddf4df; }
+.lesson-table tr.lesson-color-blue { background: #dff2ff; }
+.lesson-table tr.lesson-color-pink { background: #ffe3ef; }
+.lesson-table tr.lesson-color-purple { background: #eee4ff; }
+.lesson-table tr.lesson-color-orange { background: #ffe8d2; }
 .lesson-table tr.break-row { background: #f1f1f1; }
 .lesson-table .row-delete { padding: 4px 8px; border: 0; color: #9a5b57; background: transparent; }
 .lesson-table .test-na { color: #a8b0ac; font-size: 11px; }
