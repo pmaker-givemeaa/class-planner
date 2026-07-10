@@ -296,9 +296,10 @@ textarea { resize: vertical; line-height: 1.5; }
 .lesson-table th { padding: 12px 7px; color: var(--muted); font-size: 11px; text-align: left; border-bottom: 1px solid var(--line); }
 .lesson-table td { padding: 6px 7px; border-bottom: 1px solid #edf0ee; }
 .lesson-table th:first-child { width: 55px; }
-.lesson-table th:nth-child(3) { width: 220px; }
-.lesson-table th:nth-child(4), .lesson-table th:nth-child(5), .lesson-table th:nth-child(6) { width: 100px; text-align: center; }
-.lesson-table th:nth-child(7) { width: 210px; }
+.lesson-table th:nth-child(2) { width: 78px; }
+.lesson-table th:nth-child(4) { width: 210px; }
+.lesson-table th:nth-child(5), .lesson-table th:nth-child(6), .lesson-table th:nth-child(7) { width: 100px; text-align: center; }
+.lesson-table th:nth-child(8) { width: 190px; }
 .lesson-table th:last-child { width: 43px; }
 .lesson-table input[type="text"] { margin: 0; padding: 8px 9px; }
 .lesson-table .check-cell { text-align: center; }

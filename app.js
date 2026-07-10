@@ -41,7 +41,9 @@
             if (!("book" in cls)) cls.book = "";
             cls.lessons.forEach(function (lesson) {
               if (!("homework" in lesson)) lesson.homework = "";
+              if (!("date" in lesson)) lesson.date = "";
             });
+            fillMissingLessonDates(cls);
             if (cls.grade === "elementary") cls.grade = "elementary6";
             if (["high1", "high2", "high3", "other", ""].indexOf(cls.grade) >= 0) cls.grade = "ungraded";
           });
@@ -55,6 +57,7 @@
           }
           template.lessons.forEach(function (lesson) {
             if (!("homework" in lesson)) lesson.homework = "";
+            if (!("date" in lesson)) lesson.date = "";
           });
           if (template.grade === "elementary") template.grade = "elementary6";
           if (!template.grade || ["high1", "high2", "high3", "other"].indexOf(template.grade) >= 0) {
@@ -95,7 +98,7 @@
   }
 
   function makeLesson(topic) {
-    return { id: uid(), topic: topic || "", homework: "", ready: false, test: false, break: false, note: "" };
+    return { id: uid(), topic: topic || "", date: "", homework: "", ready: false, test: false, break: false, note: "" };
   }
 
   function makeLessonFromTemplate(item) {
@@ -171,6 +174,21 @@
 
   function shortDate(date) {
     return date ? (date.getMonth() + 1) + "/" + date.getDate() : "";
+  }
+
+  function autoLessonDate(cls, index) {
+    var start = parseLocalDate(cls.startDate);
+    if (!start) return "";
+    var date = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+    date.setDate(date.getDate() + index * 7);
+    return shortDate(date);
+  }
+
+  function fillMissingLessonDates(cls) {
+    if (!cls || !Array.isArray(cls.lessons)) return;
+    cls.lessons.forEach(function (lesson, index) {
+      if (!lesson.date) lesson.date = autoLessonDate(cls, index);
+    });
   }
 
   function escapeHtml(value) {
@@ -326,6 +344,7 @@
     var classes = currentQuarter().classes;
     if (editingClassId) {
       var cls = classes.find(function (c) { return c.id === editingClassId; });
+      var previousStartDate = cls.startDate;
       cls.name = name;
       cls.day = $("classDay").value;
       cls.grade = $("classGrade").value;
@@ -335,11 +354,15 @@
       cls.lessons = topics.map(function (topic, index) {
         var old = cls.lessons[index];
         var homework = index < homeworks.length ? homeworks[index] : (old ? old.homework || "" : "");
-        return old ? Object.assign({}, old, { topic: topic, homework: homework }) :
-          Object.assign(makeLesson(topic), { homework: homework });
+        var oldAutoDate = autoLessonDate({ startDate: previousStartDate }, index);
+        var shouldRefreshDate = !old || !old.date || old.date === oldAutoDate;
+        var date = shouldRefreshDate ? autoLessonDate(cls, index) : old.date;
+        return old ? Object.assign({}, old, { topic: topic, date: date, homework: homework }) :
+          Object.assign(makeLesson(topic), { date: autoLessonDate(cls, index), homework: homework });
       });
+      fillMissingLessonDates(cls);
     } else {
-      classes.push({
+      var newClass = {
         id: uid(), name: name, day: $("classDay").value,
         grade: $("classGrade").value,
         book: $("classBook").value.trim(),
@@ -347,7 +370,9 @@
         lessons: topics.map(function (topic, index) {
           return Object.assign(makeLesson(topic), { homework: homeworks[index] || "" });
         })
-      });
+      };
+      fillMissingLessonDates(newClass);
+      classes.push(newClass);
     }
     saveState("수업을 저장했습니다.");
     render();
@@ -370,6 +395,7 @@
       var rowClass = lesson.break ? "break-row" : (lesson.ready ? "done" : "");
       return '<tr class="' + rowClass + '" data-lesson-id="' + lesson.id + '">' +
         "<td><strong>" + (index + 1) + "</strong></td>" +
+        '<td><input type="text" data-field="date" value="' + escapeHtml(lesson.date || autoLessonDate(cls, index)) + '" placeholder="7/10"></td>' +
         '<td><input type="text" data-field="topic" value="' + escapeHtml(lesson.topic) + '"></td>' +
         '<td><input type="text" data-field="homework" value="' + escapeHtml(lesson.homework || "") + '" placeholder="과제 범위"></td>' +
         '<td class="check-cell"><input type="checkbox" data-field="ready"' + (lesson.ready ? " checked" : "") + (lesson.break ? " disabled" : "") + "></td>" +
@@ -409,6 +435,7 @@
     var rows = cls.lessons.map(function (lesson, index) {
       return '<tr class="' + (lesson.break ? "break-row" : "") + '">' +
         "<td>" + (index + 1) + "</td>" +
+        "<td>" + escapePrintText(lesson.date || autoLessonDate(cls, index)) + "</td>" +
         "<td>" + escapePrintText(lesson.topic || "진도 미입력") + "</td>" +
         "<td>" + escapePrintText(lesson.homework || "") + "</td>" +
         "</tr>";
@@ -421,16 +448,17 @@
       ".sheet{width:100%;}" +
       ".eyebrow{margin:0 0 8px;color:#567064;font-size:11px;font-weight:800;letter-spacing:1.5px;}" +
       "h1{margin:0 0 8px;font-size:24px;letter-spacing:-.7px;}" +
-      ".meta{display:grid;grid-template-columns:2fr 1.4fr 1fr;gap:7px;margin:14px 0 16px;}" +
-      ".meta div{padding:9px 12px;border:1px solid #dce3df;border-radius:8px;background:#f8faf9;}" +
+      ".meta{display:flex;align-items:stretch;gap:7px;margin:14px 0 16px;}" +
+      ".meta div{flex:0 0 auto;padding:9px 12px;border:1px solid #dce3df;border-radius:8px;background:#f8faf9;}" +
       ".meta span{display:block;margin-bottom:4px;color:#6b756f;font-size:11px;font-weight:800;}" +
       ".meta strong{font-size:14px;}" +
       "table{width:100%;border-collapse:collapse;table-layout:fixed;}" +
       "th,td{padding:7px 9px;border:1px solid #dce3df;text-align:left;vertical-align:middle;line-height:1.32;font-size:12px;}" +
       "th{background:#edf4f0;color:#234536;font-size:12px;}" +
       "td:first-child,th:first-child{width:42px;text-align:center;}" +
-      "td:nth-child(2),th:nth-child(2){width:62%;white-space:nowrap;}" +
-      "td:nth-child(3),th:nth-child(3){width:30%;}" +
+      "td:nth-child(2),th:nth-child(2){width:60px;text-align:center;}" +
+      "td:nth-child(3),th:nth-child(3){width:58%;white-space:nowrap;}" +
+      "td:nth-child(4),th:nth-child(4){width:28%;}" +
       "tr.break-row td{background:#e9ecea;color:#6d7671;}" +
       "@media screen{body{padding:24px;background:#eef2ef}.sheet{box-sizing:border-box;max-width:1120px;margin:0 auto;padding:24px;background:white;box-shadow:0 18px 50px rgba(25,43,34,.12);}}" +
       "@media print{body{padding:0}.sheet{max-width:none}}" +
@@ -441,7 +469,7 @@
       "<div><span>수업 요일/시간</span><strong>" + escapeHtml(cls.day + "요일 " + (cls.startTime || "시각 미설정")) + "</strong></div>" +
       "<div><span>개강일</span><strong>" + escapeHtml(cls.startDate || "-") + "</strong></div>" +
       "</section>" +
-      "<table><thead><tr><th>차시</th><th>차시별 진도</th><th>과제 범위</th></tr></thead><tbody>" + rows + "</tbody></table>" +
+      "<table><thead><tr><th>차시</th><th>날짜</th><th>차시별 진도</th><th>과제 범위</th></tr></thead><tbody>" + rows + "</tbody></table>" +
       "<script>window.addEventListener('load',function(){window.focus();setTimeout(function(){window.print();},150);});<\/script>" +
       "</main></body></html>";
     var win = window.open("", "_blank");
@@ -491,6 +519,7 @@
         startDate: suggestedStartDate("월"), startTime: "10:00",
         lessons: items.map(makeLessonFromTemplate)
       });
+      fillMissingLessonDates(currentQuarter().classes[currentQuarter().classes.length - 1]);
       saveState("월요일에 수업을 추가했습니다. 필요하면 요일을 수정하세요.");
       render();
     }
@@ -640,7 +669,7 @@
   });
   $("lessonTableBody").addEventListener("input", function (e) {
     var field = e.target.dataset.field;
-    if (field !== "topic" && field !== "homework" && field !== "note") return;
+    if (field !== "date" && field !== "topic" && field !== "homework" && field !== "note") return;
     var row = e.target.closest("tr");
     var lesson = activeClass().lessons.find(function (l) { return l.id === row.dataset.lessonId; });
     lesson[field] = e.target.value;
@@ -668,7 +697,10 @@
     renderSchedule();
   });
   $("addLessonBtn").addEventListener("click", function () {
-    activeClass().lessons.push(makeLesson(""));
+    var cls = activeClass();
+    var lesson = makeLesson("");
+    lesson.date = autoLessonDate(cls, cls.lessons.length);
+    cls.lessons.push(lesson);
     saveState();
     renderLessonRows();
     var rows = $("lessonTableBody").querySelectorAll("tr");
@@ -698,14 +730,16 @@
       if (cells.length > 4) lesson.note = cells.slice(4).join(" ");
       return lesson;
     });
-    currentQuarter().classes.push({
+    var pastedClass = {
       id: uid(), name: $("pasteClassName").value.trim(),
       day: $("pasteDay").value,
       grade: "ungraded",
       book: "",
       startDate: suggestedStartDate($("pasteDay").value), startTime: "10:00",
       lessons: lessons
-    });
+    };
+    fillMissingLessonDates(pastedClass);
+    currentQuarter().classes.push(pastedClass);
     saveState(rows.length + "개 차시를 가져왔습니다.");
     render();
   });
