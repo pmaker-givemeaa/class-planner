@@ -39,12 +39,23 @@
             if (!("startTime" in cls)) cls.startTime = "";
             if (!("grade" in cls)) cls.grade = "";
             if (!("book" in cls)) cls.book = "";
+            cls.lessons.forEach(function (lesson) {
+              if (!("homework" in lesson)) lesson.homework = "";
+            });
             if (cls.grade === "elementary") cls.grade = "elementary6";
             if (["high1", "high2", "high3", "other", ""].indexOf(cls.grade) >= 0) cls.grade = "ungraded";
           });
         });
         parsed.templates.forEach(function (template) {
           if (!("book" in template)) template.book = "";
+          if (!Array.isArray(template.lessons)) {
+            template.lessons = (template.topics || []).map(function (topic) {
+              return { topic: topic, homework: "" };
+            });
+          }
+          template.lessons.forEach(function (lesson) {
+            if (!("homework" in lesson)) lesson.homework = "";
+          });
           if (template.grade === "elementary") template.grade = "elementary6";
           if (!template.grade || ["high1", "high2", "high3", "other"].indexOf(template.grade) >= 0) {
             template.grade = "ungraded";
@@ -84,7 +95,24 @@
   }
 
   function makeLesson(topic) {
-    return { id: uid(), topic: topic || "", ready: false, test: false, break: false, note: "" };
+    return { id: uid(), topic: topic || "", homework: "", ready: false, test: false, break: false, note: "" };
+  }
+
+  function makeLessonFromTemplate(item) {
+    var lesson = makeLesson(item && item.topic ? item.topic : "");
+    lesson.homework = item && item.homework ? item.homework : "";
+    return lesson;
+  }
+
+  function templateLessonItems(template) {
+    if (Array.isArray(template.lessons)) {
+      return template.lessons.map(function (lesson) {
+        return { topic: lesson.topic || "", homework: lesson.homework || "" };
+      });
+    }
+    return (template.topics || []).map(function (topic) {
+      return { topic: topic, homework: "" };
+    });
   }
 
   function dateKey(date) {
@@ -254,11 +282,12 @@
     $("emptyTemplates").classList.toggle("hidden", state.templates.length > 0);
     $("templateGrid").classList.toggle("hidden", state.templates.length === 0);
     $("templateGrid").innerHTML = state.templates.map(function (t) {
-      var preview = t.topics.slice(0, 3).join(" · ");
+      var items = templateLessonItems(t);
+      var preview = items.slice(0, 3).map(function (item) { return item.topic; }).join(" · ");
       return '<article class="template-card">' +
-        '<span class="tag">' + t.topics.length + '차시</span>' +
+        '<span class="tag">' + items.length + '차시</span>' +
         "<h3>" + escapeHtml(t.name) + "</h3>" +
-        "<p>" + escapeHtml(preview || "진도 미입력") + (t.topics.length > 3 ? "…" : "") + "</p>" +
+        "<p>" + escapeHtml(preview || "진도 미입력") + (items.length > 3 ? "…" : "") + "</p>" +
         '<div class="template-actions"><button class="primary" data-template-use="' + t.id + '">현재 분기에 추가</button>' +
         '<button class="danger ghost" data-template-delete="' + t.id + '">삭제</button></div></article>';
     }).join("");
@@ -327,6 +356,7 @@
       return '<tr class="' + rowClass + '" data-lesson-id="' + lesson.id + '">' +
         "<td><strong>" + (index + 1) + "</strong></td>" +
         '<td><input type="text" data-field="topic" value="' + escapeHtml(lesson.topic) + '"></td>' +
+        '<td><input type="text" data-field="homework" value="' + escapeHtml(lesson.homework || "") + '" placeholder="과제 범위"></td>' +
         '<td class="check-cell"><input type="checkbox" data-field="ready"' + (lesson.ready ? " checked" : "") + (lesson.break ? " disabled" : "") + "></td>" +
         '<td class="check-cell">' + (index === 0 ? '<span class="test-na">첫 차시 없음</span>' :
           '<input type="checkbox" data-field="test"' + (lesson.test ? " checked" : "") + (lesson.break ? " disabled" : "") + ">") + "</td>" +
@@ -339,18 +369,72 @@
   function storeTemplate(cls) {
     var existing = state.templates.find(function (t) { return t.name === cls.name; });
     var topics = cls.lessons.map(function (l) { return l.topic; });
+    var lessons = cls.lessons.map(function (l) { return { topic: l.topic || "", homework: l.homework || "" }; });
     if (existing) {
       existing.topics = topics;
+      existing.lessons = lessons;
       existing.grade = cls.grade || "";
       existing.book = cls.book || "";
       existing.updatedAt = new Date().toISOString();
       toast("같은 이름의 보관 수업을 업데이트했습니다.");
     } else {
-      state.templates.push({ id: uid(), name: cls.name, grade: cls.grade || "", book: cls.book || "", topics: topics, updatedAt: new Date().toISOString() });
+      state.templates.push({ id: uid(), name: cls.name, grade: cls.grade || "", book: cls.book || "", topics: topics, lessons: lessons, updatedAt: new Date().toISOString() });
       toast("수업을 보관함에 저장했습니다.");
     }
     saveState();
     renderTemplates();
+  }
+
+  function escapePrintText(value) {
+    return escapeHtml(value || "").replace(/\n/g, "<br>");
+  }
+
+  function printClass(cls) {
+    if (!cls) return;
+    var rows = cls.lessons.map(function (lesson, index) {
+      return "<tr>" +
+        "<td>" + (index + 1) + "</td>" +
+        "<td>" + escapePrintText(lesson.topic || "진도 미입력") + "</td>" +
+        "<td>" + escapePrintText(lesson.homework || "") + "</td>" +
+        "</tr>";
+    }).join("");
+    var title = escapeHtml(cls.name);
+    var html = "<!doctype html><html lang=\"ko\"><head><meta charset=\"UTF-8\"><title>" + title + " 수업 계획표</title>" +
+      "<style>" +
+      "body{margin:0;padding:30px;color:#17211d;font-family:Pretendard,'Noto Sans KR','Apple SD Gothic Neo',system-ui,sans-serif;}" +
+      ".sheet{max-width:900px;margin:0 auto;}" +
+      ".eyebrow{margin:0 0 8px;color:#567064;font-size:11px;font-weight:800;letter-spacing:1.5px;}" +
+      "h1{margin:0 0 10px;font-size:28px;letter-spacing:-.7px;}" +
+      ".meta{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:18px 0 24px;}" +
+      ".meta div{padding:12px 14px;border:1px solid #dce3df;border-radius:10px;background:#f8faf9;}" +
+      ".meta span{display:block;margin-bottom:4px;color:#6b756f;font-size:11px;font-weight:800;}" +
+      ".meta strong{font-size:15px;}" +
+      "table{width:100%;border-collapse:collapse;table-layout:fixed;}" +
+      "th,td{padding:11px 12px;border:1px solid #dce3df;text-align:left;vertical-align:top;line-height:1.45;}" +
+      "th{background:#edf4f0;color:#234536;font-size:12px;}" +
+      "td:first-child,th:first-child{width:58px;text-align:center;}" +
+      "td:nth-child(3),th:nth-child(3){width:36%;}" +
+      ".footer{margin-top:18px;color:#87928d;font-size:11px;text-align:right;}" +
+      "@media print{body{padding:0}.sheet{max-width:none}.no-print{display:none}}" +
+      "</style></head><body><main class=\"sheet\">" +
+      "<p class=\"eyebrow\">CLASS PLAN</p><h1>" + title + "</h1>" +
+      "<section class=\"meta\">" +
+      "<div><span>교재</span><strong>" + escapeHtml(cls.book || "-") + "</strong></div>" +
+      "<div><span>수업 요일/시간</span><strong>" + escapeHtml(cls.day + "요일 " + (cls.startTime || "시각 미설정")) + "</strong></div>" +
+      "<div><span>개강일</span><strong>" + escapeHtml(cls.startDate || "-") + "</strong></div>" +
+      "</section>" +
+      "<table><thead><tr><th>차시</th><th>차시별 진도</th><th>과제 범위</th></tr></thead><tbody>" + rows + "</tbody></table>" +
+      "<p class=\"footer\">수업 플래너에서 출력</p>" +
+      "<script>window.addEventListener('load',function(){window.focus();setTimeout(function(){window.print();},150);});<\/script>" +
+      "</main></body></html>";
+    var win = window.open("", "_blank");
+    if (!win) {
+      alert("팝업이 차단되어 인쇄창을 열 수 없습니다. 브라우저 팝업 허용 후 다시 시도해 주세요.");
+      return;
+    }
+    win.document.open();
+    win.document.write(html);
+    win.document.close();
   }
 
   function parsePastedRows(text) {
@@ -382,12 +466,13 @@
     var use = e.target.closest("[data-template-use]");
     if (use) {
       var template = state.templates.find(function (t) { return t.id === use.dataset.templateUse; });
+      var items = templateLessonItems(template);
       currentQuarter().classes.push({
         id: uid(), name: template.name, day: "월",
         grade: template.grade || "ungraded",
         book: template.book || "",
         startDate: suggestedStartDate("월"), startTime: "10:00",
-        lessons: template.topics.map(makeLesson)
+        lessons: items.map(makeLessonFromTemplate)
       });
       saveState("월요일에 수업을 추가했습니다. 필요하면 요일을 수정하세요.");
       render();
@@ -502,17 +587,20 @@
     openClassDialog(cls);
   });
   $("storeClassBtn").addEventListener("click", function () { storeTemplate(activeClass()); });
+  $("printClassBtn").addEventListener("click", function () { printClass(activeClass()); });
   $("saveAllTemplatesBtn").addEventListener("click", function () {
     currentQuarter().classes.forEach(function (cls) {
       var existing = state.templates.find(function (t) { return t.name === cls.name; });
       var topics = cls.lessons.map(function (l) { return l.topic; });
+      var lessons = cls.lessons.map(function (l) { return { topic: l.topic || "", homework: l.homework || "" }; });
       if (existing) {
         existing.topics = topics;
+        existing.lessons = lessons;
         existing.grade = cls.grade || "";
         existing.book = cls.book || "";
         existing.updatedAt = new Date().toISOString();
       } else {
-        state.templates.push({ id: uid(), name: cls.name, grade: cls.grade || "", book: cls.book || "", topics: topics, updatedAt: new Date().toISOString() });
+        state.templates.push({ id: uid(), name: cls.name, grade: cls.grade || "", book: cls.book || "", topics: topics, lessons: lessons, updatedAt: new Date().toISOString() });
       }
     });
     saveState("현재 분기의 모든 수업을 보관했습니다.");
@@ -535,7 +623,7 @@
   });
   $("lessonTableBody").addEventListener("input", function (e) {
     var field = e.target.dataset.field;
-    if (field !== "topic" && field !== "note") return;
+    if (field !== "topic" && field !== "homework" && field !== "note") return;
     var row = e.target.closest("tr");
     var lesson = activeClass().lessons.find(function (l) { return l.id === row.dataset.lessonId; });
     lesson[field] = e.target.value;
@@ -589,7 +677,8 @@
       var bool = function (value) { return /^(true|yes|1|완료|v|o)$/i.test(value || ""); };
       if (cells.length > 1) lesson.ready = bool(cells[1]);
       if (cells.length > 2 && index > 0) lesson.test = bool(cells[2]);
-      if (cells.length > 3) lesson.note = cells.slice(3).join(" ");
+      if (cells.length > 3) lesson.homework = cells[3] || "";
+      if (cells.length > 4) lesson.note = cells.slice(4).join(" ");
       return lesson;
     });
     currentQuarter().classes.push({
