@@ -157,9 +157,14 @@
           </span>
         </label>
       </div>
-      <label>차시별 진도 <span class="hint">한 줄이 한 차시입니다</span>
-        <textarea id="lessonLines" rows="12" placeholder="열&#10;비열, 열팽창&#10;중력, 탄성력, 마찰력"></textarea>
-      </label>
+      <div class="lesson-bulk-row">
+        <label>차시별 진도 <span class="hint">한 줄이 한 차시입니다</span>
+          <textarea id="lessonLines" rows="12" placeholder="열&#10;비열, 열팽창&#10;중력, 탄성력, 마찰력"></textarea>
+        </label>
+        <label>과제 범위 <span class="hint">진도와 같은 줄 번호로 매칭됩니다</span>
+          <textarea id="homeworkLines" rows="12" placeholder="p.12~15&#10;p.18 1~8번&#10;프린트 2쪽"></textarea>
+        </label>
+      </div>
       <div class="dialog-actions split">
         <button type="button" id="deleteClassBtn" class="danger ghost hidden">수업 삭제</button>
         <div>

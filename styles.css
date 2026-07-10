@@ -262,7 +262,8 @@ dialog form, dialog > :not(.dialog-head) { }
 .dialog-head { display: flex; align-items: center; justify-content: space-between; padding: 25px 27px 15px; }
 .dialog-head h2 { margin-bottom: 0; font-size: 21px; }
 .close-button { padding: 2px 9px; border: 0; color: var(--muted); background: transparent; font-size: 27px; font-weight: 300; }
-dialog form > label, dialog form > .form-row, dialog form > .guide, dialog form > .preview-text { margin-left: 27px; margin-right: 27px; }
+dialog form > label, dialog form > .form-row, dialog form > .guide, dialog form > .preview-text, dialog form > .lesson-bulk-row { margin-left: 27px; margin-right: 27px; }
+#classDialog { width: min(940px, calc(100vw - 80px)); }
 label { color: #405048; font-size: 12px; font-weight: 750; }
 input, select, textarea {
   width: 100%;
@@ -278,6 +279,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--green); box-shad
 textarea { resize: vertical; line-height: 1.5; }
 .form-row { display: grid; grid-template-columns: 150px 1fr; gap: 13px; margin-bottom: 16px; }
 .form-row.class-time-row { grid-template-columns: 1fr 1fr; }
+.lesson-bulk-row { display: grid; grid-template-columns: 1.25fr 1fr; gap: 13px; }
 .grade-field, .book-field { display: block; margin-bottom: 16px; }
 .time-chips { display: flex; gap: 5px; margin-top: 6px; }
 .time-chips button { padding: 4px 10px; border-radius: 20px; color: var(--green); font-size: 10px; }

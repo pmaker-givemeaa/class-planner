@@ -104,6 +104,15 @@
     return lesson;
   }
 
+  function splitNonEmptyLines(text) {
+    return text.split(/\r?\n/).map(function (v) { return v.trim(); }).filter(Boolean);
+  }
+
+  function splitMatchedLines(text) {
+    if (!text.trim()) return [];
+    return text.replace(/\r/g, "").split("\n").map(function (v) { return v.trim(); });
+  }
+
   function templateLessonItems(template) {
     if (Array.isArray(template.lessons)) {
       return template.lessons.map(function (lesson) {
@@ -303,6 +312,7 @@
     $("classStartDate").value = cls ? (cls.startDate || "") : suggestedStartDate(presetDay || "월");
     $("classStartTime").value = cls ? (cls.startTime || "") : "10:00";
     $("lessonLines").value = cls ? cls.lessons.map(function (l) { return l.topic; }).join("\n") : "";
+    $("homeworkLines").value = cls ? cls.lessons.map(function (l) { return l.homework || ""; }).join("\n") : "";
     $("deleteClassBtn").classList.toggle("hidden", !cls);
     $("classDialog").showModal();
     setTimeout(function () { $("className").focus(); }, 50);
@@ -311,7 +321,8 @@
   function saveClassFromForm() {
     var name = $("className").value.trim();
     if (!name) return;
-    var topics = $("lessonLines").value.split(/\r?\n/).map(function (v) { return v.trim(); }).filter(Boolean);
+    var topics = splitNonEmptyLines($("lessonLines").value);
+    var homeworks = splitMatchedLines($("homeworkLines").value);
     var classes = currentQuarter().classes;
     if (editingClassId) {
       var cls = classes.find(function (c) { return c.id === editingClassId; });
@@ -323,7 +334,9 @@
       cls.startTime = $("classStartTime").value;
       cls.lessons = topics.map(function (topic, index) {
         var old = cls.lessons[index];
-        return old ? Object.assign({}, old, { topic: topic }) : makeLesson(topic);
+        var homework = index < homeworks.length ? homeworks[index] : (old ? old.homework || "" : "");
+        return old ? Object.assign({}, old, { topic: topic, homework: homework }) :
+          Object.assign(makeLesson(topic), { homework: homework });
       });
     } else {
       classes.push({
@@ -331,7 +344,9 @@
         grade: $("classGrade").value,
         book: $("classBook").value.trim(),
         startDate: $("classStartDate").value, startTime: $("classStartTime").value,
-        lessons: topics.map(makeLesson)
+        lessons: topics.map(function (topic, index) {
+          return Object.assign(makeLesson(topic), { homework: homeworks[index] || "" });
+        })
       });
     }
     saveState("수업을 저장했습니다.");
@@ -392,7 +407,7 @@
   function printClass(cls) {
     if (!cls) return;
     var rows = cls.lessons.map(function (lesson, index) {
-      return "<tr>" +
+      return '<tr class="' + (lesson.break ? "break-row" : "") + '">' +
         "<td>" + (index + 1) + "</td>" +
         "<td>" + escapePrintText(lesson.topic || "진도 미입력") + "</td>" +
         "<td>" + escapePrintText(lesson.homework || "") + "</td>" +
@@ -401,21 +416,24 @@
     var title = escapeHtml(cls.name);
     var html = "<!doctype html><html lang=\"ko\"><head><meta charset=\"UTF-8\"><title>" + title + " 수업 계획표</title>" +
       "<style>" +
-      "body{margin:0;padding:30px;color:#17211d;font-family:Pretendard,'Noto Sans KR','Apple SD Gothic Neo',system-ui,sans-serif;}" +
-      ".sheet{max-width:900px;margin:0 auto;}" +
+      "@page{size:A4 landscape;margin:10mm;}" +
+      "body{margin:0;padding:0;color:#17211d;font-family:Pretendard,'Noto Sans KR','Apple SD Gothic Neo',system-ui,sans-serif;}" +
+      ".sheet{width:100%;}" +
       ".eyebrow{margin:0 0 8px;color:#567064;font-size:11px;font-weight:800;letter-spacing:1.5px;}" +
-      "h1{margin:0 0 10px;font-size:28px;letter-spacing:-.7px;}" +
-      ".meta{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:18px 0 24px;}" +
-      ".meta div{padding:12px 14px;border:1px solid #dce3df;border-radius:10px;background:#f8faf9;}" +
+      "h1{margin:0 0 8px;font-size:24px;letter-spacing:-.7px;}" +
+      ".meta{display:grid;grid-template-columns:2fr 1.4fr 1fr;gap:7px;margin:14px 0 16px;}" +
+      ".meta div{padding:9px 12px;border:1px solid #dce3df;border-radius:8px;background:#f8faf9;}" +
       ".meta span{display:block;margin-bottom:4px;color:#6b756f;font-size:11px;font-weight:800;}" +
-      ".meta strong{font-size:15px;}" +
+      ".meta strong{font-size:14px;}" +
       "table{width:100%;border-collapse:collapse;table-layout:fixed;}" +
-      "th,td{padding:11px 12px;border:1px solid #dce3df;text-align:left;vertical-align:top;line-height:1.45;}" +
+      "th,td{padding:7px 9px;border:1px solid #dce3df;text-align:left;vertical-align:middle;line-height:1.32;font-size:12px;}" +
       "th{background:#edf4f0;color:#234536;font-size:12px;}" +
-      "td:first-child,th:first-child{width:58px;text-align:center;}" +
-      "td:nth-child(3),th:nth-child(3){width:36%;}" +
-      ".footer{margin-top:18px;color:#87928d;font-size:11px;text-align:right;}" +
-      "@media print{body{padding:0}.sheet{max-width:none}.no-print{display:none}}" +
+      "td:first-child,th:first-child{width:42px;text-align:center;}" +
+      "td:nth-child(2),th:nth-child(2){width:62%;white-space:nowrap;}" +
+      "td:nth-child(3),th:nth-child(3){width:30%;}" +
+      "tr.break-row td{background:#e9ecea;color:#6d7671;}" +
+      "@media screen{body{padding:24px;background:#eef2ef}.sheet{box-sizing:border-box;max-width:1120px;margin:0 auto;padding:24px;background:white;box-shadow:0 18px 50px rgba(25,43,34,.12);}}" +
+      "@media print{body{padding:0}.sheet{max-width:none}}" +
       "</style></head><body><main class=\"sheet\">" +
       "<p class=\"eyebrow\">CLASS PLAN</p><h1>" + title + "</h1>" +
       "<section class=\"meta\">" +
@@ -424,7 +442,6 @@
       "<div><span>개강일</span><strong>" + escapeHtml(cls.startDate || "-") + "</strong></div>" +
       "</section>" +
       "<table><thead><tr><th>차시</th><th>차시별 진도</th><th>과제 범위</th></tr></thead><tbody>" + rows + "</tbody></table>" +
-      "<p class=\"footer\">수업 플래너에서 출력</p>" +
       "<script>window.addEventListener('load',function(){window.focus();setTimeout(function(){window.print();},150);});<\/script>" +
       "</main></body></html>";
     var win = window.open("", "_blank");
