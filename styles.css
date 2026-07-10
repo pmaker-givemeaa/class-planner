@@ -356,12 +356,12 @@ textarea { resize: vertical; line-height: 1.5; }
 .lesson-table .check-cell { text-align: center; }
 .lesson-table input[type="checkbox"] { width: 18px; height: 18px; margin: 0; accent-color: var(--green); }
 .lesson-table tr.done { background: #f0f7f3; }
-.lesson-table tr.lesson-color-yellow { background: #fff6c7; }
-.lesson-table tr.lesson-color-green { background: #ddf4df; }
-.lesson-table tr.lesson-color-blue { background: #dff2ff; }
-.lesson-table tr.lesson-color-pink { background: #ffe3ef; }
-.lesson-table tr.lesson-color-purple { background: #eee4ff; }
-.lesson-table tr.lesson-color-orange { background: #ffe8d2; }
+.lesson-table td.lesson-color-yellow { background: #fff6c7; }
+.lesson-table td.lesson-color-green { background: #ddf4df; }
+.lesson-table td.lesson-color-blue { background: #dff2ff; }
+.lesson-table td.lesson-color-pink { background: #ffe3ef; }
+.lesson-table td.lesson-color-purple { background: #eee4ff; }
+.lesson-table td.lesson-color-orange { background: #ffe8d2; }
 .lesson-table tr.break-row { background: #f1f1f1; }
 .lesson-table .row-delete { padding: 4px 8px; border: 0; color: #9a5b57; background: transparent; }
 .lesson-table .test-na { color: #a8b0ac; font-size: 11px; }

@@ -230,7 +230,7 @@
   }
 
   function lessonColorClass(color) {
-    return color ? " lesson-color-" + color : "";
+    return color ? "lesson-color-" + color : "";
   }
 
   function lessonColorValue(color) {
@@ -453,7 +453,7 @@
     var cls = activeClass();
     if (!cls) return;
     $("lessonTableBody").innerHTML = cls.lessons.map(function (lesson, index) {
-      var rowClass = (lesson.break ? "break-row" : (lesson.ready ? "done" : "")) + lessonColorClass(lesson.color);
+      var rowClass = lesson.break ? "break-row" : (lesson.ready ? "done" : "");
       var dateValue = lesson.date || autoLessonDate(cls, index);
       var warning = lessonDateWarning(cls, dateValue);
       return '<tr class="' + rowClass + '" data-lesson-id="' + lesson.id + '">' +
@@ -461,7 +461,7 @@
         paletteButtonHtml(lesson) + "</div></td>" +
         '<td class="date-cell"><input type="text" data-field="date" value="' + escapeHtml(dateValue) + '" placeholder="7/10">' +
         '<span class="date-warning">' + escapeHtml(warning) + "</span></td>" +
-        '<td><input type="text" data-field="topic" value="' + escapeHtml(lesson.topic) + '"></td>' +
+        '<td class="' + lessonColorClass(lesson.color) + '"><input type="text" data-field="topic" value="' + escapeHtml(lesson.topic) + '"></td>' +
         '<td><input type="text" data-field="homework" value="' + escapeHtml(lesson.homework || "") + '" placeholder="과제 범위"></td>' +
         '<td class="check-cell"><input type="checkbox" data-field="ready"' + (lesson.ready ? " checked" : "") + (lesson.break ? " disabled" : "") + "></td>" +
         '<td class="check-cell">' + (index === 0 ? '<span class="test-na">첫 차시 없음</span>' :
@@ -500,10 +500,10 @@
     var rows = cls.lessons.map(function (lesson, index) {
       var color = lesson.break ? "" : lessonColorValue(lesson.color);
       var style = color ? ' style="background:' + color + '"' : "";
-      return '<tr class="' + (lesson.break ? "break-row" : "") + '"' + style + ">" +
+      return '<tr class="' + (lesson.break ? "break-row" : "") + '">' +
         "<td>" + (index + 1) + "</td>" +
         "<td>" + escapePrintText(lesson.date || autoLessonDate(cls, index)) + "</td>" +
-        "<td>" + escapePrintText(lesson.topic || "진도 미입력") + "</td>" +
+        "<td" + style + ">" + escapePrintText(lesson.topic || "진도 미입력") + "</td>" +
         "<td>" + escapePrintText(lesson.homework || "") + "</td>" +
         "</tr>";
     }).join("");
@@ -527,7 +527,6 @@
       "td:nth-child(2),th:nth-child(2){width:60px;text-align:center;}" +
       "td:nth-child(3),th:nth-child(3){width:58%;white-space:nowrap;}" +
       "td:nth-child(4),th:nth-child(4){width:28%;}" +
-      "tr[style] td{background:inherit;}" +
       "tr.break-row td{background:#e9ecea;color:#6d7671;}" +
       "@media screen{body{padding:24px;background:#eef2ef}.sheet{box-sizing:border-box;max-width:1120px;margin:0 auto;padding:24px;background:white;box-shadow:0 18px 50px rgba(25,43,34,.12);}}" +
       "@media print{body{padding:0}.sheet{max-width:none}}" +
