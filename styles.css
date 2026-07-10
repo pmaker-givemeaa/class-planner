@@ -138,6 +138,22 @@ main.summary-hidden .tabs { margin-top: 0; }
   box-shadow: 0 2px 4px rgba(23, 33, 29, .03);
 }
 .class-card:hover { border-color: #8eb39e; transform: translateY(-1px); }
+.class-card.selected {
+  border-color: #146c43;
+  box-shadow: 0 0 0 2px rgba(20, 108, 67, .18), 0 7px 18px rgba(23, 33, 29, .10);
+}
+.class-card.selected::after {
+  content: "선택";
+  position: absolute;
+  top: -8px;
+  left: 10px;
+  padding: 2px 6px;
+  border-radius: 99px;
+  color: white;
+  background: var(--green);
+  font-size: 9px;
+  font-weight: 850;
+}
 .class-card.grade-elementary6 { border-top: 4px solid #3a9b63; background: #f2faf5; }
 .class-card.grade-middle1 { border-top: 4px solid #dfb632; background: #fffbec; }
 .class-card.grade-middle2 { border-top: 4px solid #e77b35; background: #fff7f0; }
@@ -227,6 +243,15 @@ main.summary-hidden .tabs { margin-top: 0; }
 .progress-bar { height: 100%; border-radius: 10px; background: var(--green); }
 .class-meta { display: flex; justify-content: space-between; margin-top: 8px; color: var(--muted); font-size: 10px; }
 .class-meta .next { max-width: 90px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--green); font-weight: 700; }
+.class-meta .detail-link {
+  padding: 0;
+  border: 0;
+  color: var(--green);
+  background: transparent;
+  font-size: 10px;
+  font-weight: 800;
+}
+.class-meta .detail-link:hover { text-decoration: underline; background: transparent; }
 
 .empty-state { padding: 90px 20px; text-align: center; border: 1px dashed #c7d1cb; border-radius: 14px; background: #f9fbfa; }
 .empty-icon { width: 50px; height: 50px; margin: 0 auto 15px; padding-top: 12px; border-radius: 50%; color: var(--green); background: var(--green-soft); font-weight: 800; }

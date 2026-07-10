@@ -19,6 +19,7 @@
   var editingClassId = null;
   var quarterMode = "add";
   var storageAvailable = true;
+  var selectedClassIds = new Set();
 
   function initialState() {
     var qid = uid();
@@ -106,6 +107,11 @@
 
   function activeClass() {
     return currentQuarter().classes.find(function (c) { return c.id === activeClassId; });
+  }
+
+  function selectedClasses() {
+    var selected = currentQuarter().classes.filter(function (cls) { return selectedClassIds.has(cls.id); });
+    return selected.length ? selected : currentQuarter().classes;
   }
 
   function makeLesson(topic) {
@@ -316,10 +322,16 @@
     $("restoreDaysBtn").textContent = state.hiddenDays.length ?
       "숨긴 요일 " + state.hiddenDays.length + "개 다시 보기" : "숨긴 요일 없음";
     $("restoreDaysBtn").disabled = state.hiddenDays.length === 0;
+    $("printTeacherBtn").textContent = selectedClassIds.size ?
+      "선택 클래스 인쇄(" + selectedClassIds.size + "개)" : "전체 인쇄";
+    $("printTeacherBtn").disabled = currentQuarter().classes.length === 0;
   }
 
   function renderSchedule() {
     var classes = currentQuarter().classes;
+    selectedClassIds.forEach(function (id) {
+      if (!classes.some(function (cls) { return cls.id === id; })) selectedClassIds.delete(id);
+    });
     var visibleDays = DAYS.filter(function (day) { return state.hiddenDays.indexOf(day) < 0; });
     $("emptySchedule").classList.toggle("hidden", classes.length > 0);
     $("scheduleBoard").classList.toggle("hidden", classes.length === 0);
@@ -347,7 +359,8 @@
     var metaText = current.status === "upcoming" ? shortDate(parseLocalDate(cls.startDate)) + " 개강 예정" :
       (current.status === "undated" ? "개강일 미설정" : shortDate(current.sessionDate) + " 수업");
     var checkIcon = '<svg class="toggle-check" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.3 6.4 12 13 4.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-    return '<article class="class-card ' + current.status + " grade-" + escapeHtml(cls.grade || "unset") + '" data-class-id="' + cls.id + '">' +
+    return '<article class="class-card ' + current.status + " grade-" + escapeHtml(cls.grade || "unset") +
+      (selectedClassIds.has(cls.id) ? " selected" : "") + '" data-class-id="' + cls.id + '">' +
       '<span class="lesson-badge">' + statusText + "</span>" +
       "<h3>" + escapeHtml(cls.name) +
       (cls.book ? ' <span class="title-separator">·</span> <span class="book-name">' + escapeHtml(cls.book) + "</span>" : "") +
@@ -363,7 +376,7 @@
       '><span>테스트 준비</span>' + checkIcon + "</label></div>" +
       '<div class="progress-track"><div class="progress-bar" style="width:' + rate + '%"></div></div>' +
       '<div class="class-meta"><span>' + done + " / " + eligible.length + '차시 준비</span>' +
-      '<span>자세히 보기 ›</span></div></article>';
+      '<button type="button" class="detail-link" data-open-class>자세히 보기 ›</button></div></article>';
   }
 
   function renderTemplates() {
@@ -550,6 +563,74 @@
     win.document.close();
   }
 
+  function compactRowsHtml(cls) {
+    return cls.lessons.map(function (lesson, index) {
+      var color = lesson.break ? "" : lessonColorValue(lesson.color);
+      var style = color ? ' style="background:' + color + '"' : "";
+      return '<tr class="' + (lesson.break ? "break-row" : "") + '">' +
+        "<td>" + (index + 1) + "</td>" +
+        "<td>" + escapePrintText(lesson.date || autoLessonDate(cls, index)) + "</td>" +
+        "<td" + style + ">" + escapePrintText(lesson.topic || "") + "</td>" +
+        "<td>" + escapePrintText(lesson.homework || "") + "</td>" +
+        "</tr>";
+    }).join("");
+  }
+
+  function printTeacherClasses() {
+    var classes = selectedClasses();
+    if (!classes.length) {
+      toast("인쇄할 수업이 없습니다.");
+      return;
+    }
+    var sections = classes.map(function (cls) {
+      return '<section class="teacher-class">' +
+        '<header class="class-line"><h2>' + escapeHtml(cls.name) + "</h2>" +
+        '<div class="mini-meta">' +
+        '<span><b>교재</b> ' + escapeHtml(cls.book || "-") + "</span>" +
+        '<span><b>요일·시간</b> ' + escapeHtml(cls.day + " " + (cls.startTime || "-")) + "</span>" +
+        '<span><b>개강일</b> ' + escapeHtml(cls.startDate || "-") + "</span>" +
+        "</div></header>" +
+        '<table><thead><tr><th>차시</th><th>날짜</th><th>차시별 진도</th><th>과제 범위</th></tr></thead><tbody>' +
+        compactRowsHtml(cls) + "</tbody></table></section>";
+    }).join("");
+    var title = selectedClassIds.size ? "선택 클래스 진도표" : "전체 클래스 진도표";
+    var html = "<!doctype html><html lang=\"ko\"><head><meta charset=\"UTF-8\"><title>" + title + "</title>" +
+      "<style>" +
+      "@page{size:A4 portrait;margin:8mm;}" +
+      "*{-webkit-print-color-adjust:exact;print-color-adjust:exact;box-sizing:border-box;}" +
+      "body{margin:0;color:#17211d;font-family:Pretendard,'Noto Sans KR','Apple SD Gothic Neo',system-ui,sans-serif;}" +
+      ".sheet{width:100%;}" +
+      ".teacher-class{min-height:136mm;padding:0 0 6mm;margin:0 0 6mm;break-inside:avoid;border-bottom:1px dashed #cfd8d2;}" +
+      ".teacher-class:nth-child(2n){break-after:page;border-bottom:0;margin-bottom:0;}" +
+      ".teacher-class:last-child{break-after:auto;border-bottom:0;}" +
+      ".class-line{display:flex;align-items:center;gap:6px;margin:0 0 4px;}" +
+      "h2{flex:1 1 auto;margin:0;font-size:13px;line-height:1.25;letter-spacing:-.2px;}" +
+      ".mini-meta{display:flex;flex:0 0 auto;gap:4px;align-items:center;}" +
+      ".mini-meta span{padding:3px 5px;border:1px solid #dce3df;border-radius:5px;background:#f8faf9;font-size:8.5px;white-space:nowrap;}" +
+      ".mini-meta b{color:#617168;font-size:8px;margin-right:2px;}" +
+      "table{width:100%;border-collapse:collapse;table-layout:fixed;}" +
+      "th,td{padding:3px 5px;border:1px solid #dce3df;text-align:left;vertical-align:middle;font-size:8.5px;line-height:1.25;}" +
+      "th{background:#edf4f0;color:#234536;font-weight:800;}" +
+      "td:first-child,th:first-child{width:30px;text-align:center;}" +
+      "td:nth-child(2),th:nth-child(2){width:42px;text-align:center;}" +
+      "td:nth-child(3),th:nth-child(3){width:52%;}" +
+      "td:nth-child(4),th:nth-child(4){width:35%;}" +
+      "tr.break-row td{background:#e9ecea;color:#6d7671;}" +
+      "@media screen{body{padding:24px;background:#eef2ef}.sheet{max-width:794px;margin:0 auto;padding:24px;background:white;box-shadow:0 18px 50px rgba(25,43,34,.12);}}" +
+      "@media print{body{padding:0}.sheet{max-width:none}}" +
+      "</style></head><body><main class=\"sheet\">" + sections +
+      "<script>window.addEventListener('load',function(){window.focus();setTimeout(function(){window.print();},150);});<\/script>" +
+      "</main></body></html>";
+    var win = window.open("", "_blank");
+    if (!win) {
+      alert("팝업이 차단되어 인쇄창을 열 수 없습니다. 브라우저 팝업 허용 후 다시 시도해 주세요.");
+      return;
+    }
+    win.document.open();
+    win.document.write(html);
+    win.document.close();
+  }
+
   function parsePastedRows(text) {
     return text.split(/\r?\n/).map(function (line) {
       var cells = line.split("\t").map(function (cell) { return cell.trim(); });
@@ -574,8 +655,21 @@
       renderOverflowMenu();
     }
 
+    var openDetail = e.target.closest("[data-open-class]");
+    if (openDetail) {
+      openLessons(openDetail.closest("[data-class-id]").dataset.classId);
+      return;
+    }
+
     var card = e.target.closest("[data-class-id]");
-    if (card && !e.target.closest(".card-checks")) openLessons(card.dataset.classId);
+    if (card && !e.target.closest(".card-checks")) {
+      var id = card.dataset.classId;
+      if (selectedClassIds.has(id)) selectedClassIds.delete(id);
+      else selectedClassIds.add(id);
+      renderSchedule();
+      renderOverflowMenu();
+      return;
+    }
 
     var use = e.target.closest("[data-template-use]");
     if (use) {
@@ -627,9 +721,14 @@
     renderSummary();
     renderOverflowMenu();
   });
+  $("printTeacherBtn").addEventListener("click", function () {
+    $("overflowMenu").classList.add("hidden");
+    printTeacherClasses();
+  });
 
   $("quarterSelect").addEventListener("change", function () {
     state.activeQuarterId = this.value;
+    selectedClassIds.clear();
     saveState();
     render();
   });
