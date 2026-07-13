@@ -501,9 +501,9 @@
         '<td class="date-cell"><input type="text" data-field="date" value="' + escapeHtml(dateValue) + '" placeholder="7/10">' +
         '<span class="date-warning">' + escapeHtml(warning) + "</span></td>" +
         '<td class="lesson-set-cell ' + lessonColorClass(lesson.color) + '"><div class="lesson-set-input">' + paletteButtonHtml(lesson, 1) + '<input type="text" data-field="topic" value="' + escapeHtml(lesson.topic) + '" placeholder="진도 1"></div></td>' +
-        '<td class="' + lessonColorClass(lesson.color) + '"><input type="text" data-field="homework" value="' + escapeHtml(lesson.homework || "") + '" placeholder="과제 범위 1"></td>' +
+        '<td><input type="text" data-field="homework" value="' + escapeHtml(lesson.homework || "") + '" placeholder="과제 범위 1"></td>' +
         '<td class="lesson-set-cell second-set ' + lessonColorClass(lesson.color2) + '"><div class="lesson-set-input">' + paletteButtonHtml(lesson, 2) + '<input type="text" data-field="topic2" value="' + escapeHtml(lesson.topic2 || "") + '" placeholder="진도 2"></div></td>' +
-        '<td class="second-set ' + lessonColorClass(lesson.color2) + '"><input type="text" data-field="homework2" value="' + escapeHtml(lesson.homework2 || "") + '" placeholder="과제 범위 2"></td>' +
+        '<td class="second-set"><input type="text" data-field="homework2" value="' + escapeHtml(lesson.homework2 || "") + '" placeholder="과제 범위 2"></td>' +
         '<td class="check-cell"><input type="checkbox" data-field="ready"' + (lesson.ready ? " checked" : "") + (lesson.break ? " disabled" : "") + "></td>" +
         '<td class="check-cell">' + (index === 0 ? '<span class="test-na">첫 차시 없음</span>' :
           '<input type="checkbox" data-field="test"' + (lesson.test ? " checked" : "") + (lesson.break ? " disabled" : "") + ">") + "</td>" +
@@ -543,23 +543,30 @@
     return escapeHtml(value || "").replace(/\n/g, "<br>");
   }
 
+  function hasSecondLessonSet(cls) {
+    return cls.lessons.some(function (lesson) {
+      return Boolean((lesson.topic2 || "").trim() || (lesson.homework2 || "").trim());
+    });
+  }
+
   function printLessonSetCells(lesson, setNumber, emptyFallback) {
     var suffix = setNumber === 2 ? "2" : "";
     var color = lesson.break ? "" : lessonColorValue(lesson["color" + suffix]);
     var style = color ? ' style="background:' + color + '"' : "";
     var topic = lesson["topic" + suffix] || emptyFallback || "";
     return "<td" + style + ">" + escapePrintText(topic) + "</td>" +
-      "<td" + style + ">" + escapePrintText(lesson["homework" + suffix] || "") + "</td>";
+      "<td>" + escapePrintText(lesson["homework" + suffix] || "") + "</td>";
   }
 
   function printClass(cls) {
     if (!cls) return;
+    var includeSecond = hasSecondLessonSet(cls);
     var rows = cls.lessons.map(function (lesson, index) {
       return '<tr class="' + (lesson.break ? "break-row" : "") + '">' +
         "<td>" + (index + 1) + "</td>" +
         "<td>" + escapePrintText(lesson.date || autoLessonDate(cls, index)) + "</td>" +
         printLessonSetCells(lesson, 1, "진도 미입력") +
-        printLessonSetCells(lesson, 2, "") +
+        (includeSecond ? printLessonSetCells(lesson, 2, "") : "") +
         "</tr>";
     }).join("");
     var title = escapeHtml(cls.name);
@@ -579,11 +586,15 @@
       "th{padding:7px 9px;border:0;border-bottom:1px solid #dce3df;text-align:left;vertical-align:middle;line-height:1.32;font-size:12px;}" +
       "td{padding:7px 9px;border-top:1px solid #dce3df;border-bottom:1px solid #dce3df;background:#fff;text-align:left;vertical-align:middle;line-height:1.32;font-size:12px;}" +
       "td:first-child{border-left:1px solid #dce3df;border-radius:7px 0 0 7px;}td:last-child{border-right:1px solid #dce3df;border-radius:0 7px 7px 0;}" +
+      "td+td,th+th{border-left:1px solid #edf1ef;}" +
+      "td:nth-child(3),th:nth-child(3),.with-second td:nth-child(5),.with-second th:nth-child(5){border-left:2px solid #cbd8d1;}" +
       "th{background:#edf4f0;color:#234536;font-size:12px;}" +
       "td:first-child,th:first-child{width:42px;text-align:center;}" +
       "td:nth-child(2),th:nth-child(2){width:60px;text-align:center;}" +
-      "td:nth-child(3),th:nth-child(3),td:nth-child(5),th:nth-child(5){width:27%;}" +
-      "td:nth-child(4),th:nth-child(4),td:nth-child(6),th:nth-child(6){width:18%;}" +
+      ".single-set td:nth-child(3),.single-set th:nth-child(3){width:58%;}" +
+      ".single-set td:nth-child(4),.single-set th:nth-child(4){width:28%;}" +
+      ".with-second td:nth-child(3),.with-second th:nth-child(3),.with-second td:nth-child(5),.with-second th:nth-child(5){width:27%;}" +
+      ".with-second td:nth-child(4),.with-second th:nth-child(4),.with-second td:nth-child(6),.with-second th:nth-child(6){width:18%;}" +
       "tr.break-row td{background:#e9ecea;color:#6d7671;}" +
       "@media screen{body{padding:24px;background:#eef2ef}.sheet{box-sizing:border-box;max-width:1120px;margin:0 auto;padding:24px;background:white;box-shadow:0 18px 50px rgba(25,43,34,.12);}}" +
       "@media print{body{padding:0}.sheet{max-width:none}}" +
@@ -594,7 +605,8 @@
       "<div><span>수업 요일/시간</span><strong>" + escapeHtml(cls.day + "요일 " + (cls.startTime || "시각 미설정")) + "</strong></div>" +
       "<div><span>개강일</span><strong>" + escapeHtml(cls.startDate || "-") + "</strong></div>" +
       "</section>" +
-      "<table><thead><tr><th>차시</th><th>날짜</th><th>진도 1</th><th>과제 범위 1</th><th>진도 2</th><th>과제 범위 2</th></tr></thead><tbody>" + rows + "</tbody></table>" +
+      '<table class="' + (includeSecond ? "with-second" : "single-set") + '"><thead><tr><th>차시</th><th>날짜</th><th>진도 1</th><th>과제 범위 1</th>' +
+      (includeSecond ? "<th>진도 2</th><th>과제 범위 2</th>" : "") + "</tr></thead><tbody>" + rows + "</tbody></table>" +
       "<script>window.addEventListener('load',function(){window.focus();setTimeout(function(){window.print();},150);});<\/script>" +
       "</main></body></html>";
     var win = window.open("", "_blank");
@@ -607,13 +619,13 @@
     win.document.close();
   }
 
-  function compactRowsHtml(cls) {
+  function compactRowsHtml(cls, includeSecond) {
     return cls.lessons.map(function (lesson, index) {
       return '<tr class="' + (lesson.break ? "break-row" : "") + '">' +
         "<td>" + (index + 1) + "</td>" +
         "<td>" + escapePrintText(lesson.date || autoLessonDate(cls, index)) + "</td>" +
         printLessonSetCells(lesson, 1, "") +
-        printLessonSetCells(lesson, 2, "") +
+        (includeSecond ? printLessonSetCells(lesson, 2, "") : "") +
         "</tr>";
     }).join("");
   }
@@ -625,6 +637,7 @@
       return;
     }
     var sections = classes.map(function (cls) {
+      var includeSecond = hasSecondLessonSet(cls);
       return '<section class="teacher-class">' +
         '<header class="class-line"><h2>' + escapeHtml(cls.name) + "</h2>" +
         '<div class="mini-meta">' +
@@ -632,8 +645,9 @@
         '<span><b>요일·시간</b> ' + escapeHtml(cls.day + " " + (cls.startTime || "-")) + "</span>" +
         '<span><b>개강일</b> ' + escapeHtml(cls.startDate || "-") + "</span>" +
         "</div></header>" +
-        '<table><thead><tr><th>차시</th><th>날짜</th><th>진도 1</th><th>과제 1</th><th>진도 2</th><th>과제 2</th></tr></thead><tbody>' +
-        compactRowsHtml(cls) + "</tbody></table></section>";
+        '<table class="' + (includeSecond ? "with-second" : "single-set") + '"><thead><tr><th>차시</th><th>날짜</th><th>진도 1</th><th>과제 1</th>' +
+        (includeSecond ? "<th>진도 2</th><th>과제 2</th>" : "") + "</tr></thead><tbody>" +
+        compactRowsHtml(cls, includeSecond) + "</tbody></table></section>";
     }).join("");
     var title = selectedClassIds.size ? "선택 클래스 진도표" : "전체 클래스 진도표";
     var html = "<!doctype html><html lang=\"ko\"><head><meta charset=\"UTF-8\"><title>" + title + "</title>" +
@@ -654,11 +668,15 @@
       "th{padding:3px 5px;border:0;border-bottom:1px solid #dce3df;text-align:left;vertical-align:middle;font-size:8.5px;line-height:1.25;}" +
       "td{padding:3px 5px;border-top:1px solid #dce3df;border-bottom:1px solid #dce3df;background:#fff;text-align:left;vertical-align:middle;font-size:8.5px;line-height:1.25;}" +
       "td:first-child{border-left:1px solid #dce3df;border-radius:5px 0 0 5px;}td:last-child{border-right:1px solid #dce3df;border-radius:0 5px 5px 0;}" +
+      "td+td,th+th{border-left:1px solid #edf1ef;}" +
+      "td:nth-child(3),th:nth-child(3),.with-second td:nth-child(5),.with-second th:nth-child(5){border-left:1.5px solid #cbd8d1;}" +
       "th{background:#edf4f0;color:#234536;font-weight:800;}" +
       "td:first-child,th:first-child{width:30px;text-align:center;}" +
       "td:nth-child(2),th:nth-child(2){width:42px;text-align:center;}" +
-      "td:nth-child(3),th:nth-child(3),td:nth-child(5),th:nth-child(5){width:27%;}" +
-      "td:nth-child(4),th:nth-child(4),td:nth-child(6),th:nth-child(6){width:17%;}" +
+      ".single-set td:nth-child(3),.single-set th:nth-child(3){width:52%;}" +
+      ".single-set td:nth-child(4),.single-set th:nth-child(4){width:35%;}" +
+      ".with-second td:nth-child(3),.with-second th:nth-child(3),.with-second td:nth-child(5),.with-second th:nth-child(5){width:27%;}" +
+      ".with-second td:nth-child(4),.with-second th:nth-child(4),.with-second td:nth-child(6),.with-second th:nth-child(6){width:17%;}" +
       "tr.break-row td{background:#e9ecea;color:#6d7671;}" +
       "@media screen{body{padding:24px;background:#eef2ef}.sheet{max-width:794px;margin:0 auto;padding:24px;background:white;box-shadow:0 18px 50px rgba(25,43,34,.12);}}" +
       "@media print{body{padding:0}.sheet{max-width:none}}" +
