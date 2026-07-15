@@ -20,6 +20,7 @@
   var quarterMode = "add";
   var storageAvailable = true;
   var selectedClassIds = new Set();
+  var lessonRefreshTimer = null;
 
   function initialState() {
     var qid = uid();
@@ -109,6 +110,7 @@
     }
     if (message) toast(message);
     renderSummary();
+    scheduleLessonRefresh();
   }
 
   function currentQuarter() {
@@ -201,14 +203,24 @@
     return expected >= 0 && actual !== expected ? "수업 요일과 다릅니다" : "";
   }
 
-  function weekSessionDate(cls, today) {
-    var date = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    var mondayBased = (date.getDay() + 6) % 7;
-    date.setDate(date.getDate() - mondayBased + DAYS.indexOf(cls.day));
-    return date;
+  function lessonScheduledAt(cls, lesson, index) {
+    var start = parseLocalDate(cls.startDate);
+    if (!start) return null;
+    var expected = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+    expected.setDate(expected.getDate() + index * 7);
+    var text = String(lesson.date || "").trim();
+    var scheduled = null;
+    var full = text.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})$/);
+    var short = text.match(/^(\d{1,2})[-/.](\d{1,2})$/);
+    if (full) scheduled = new Date(Number(full[1]), Number(full[2]) - 1, Number(full[3]));
+    else if (short) scheduled = new Date(expected.getFullYear(), Number(short[1]) - 1, Number(short[2]));
+    else scheduled = expected;
+    var time = String(cls.startTime || "00:00").split(":").map(Number);
+    scheduled.setHours(time[0] || 0, time[1] || 0, 0, 0);
+    return scheduled;
   }
 
-  function currentLessonInfo(cls) {
+  function currentLessonInfo(cls, now) {
     if (!cls.startDate) {
       var fallbackIndex = cls.lessons.findIndex(function (lesson) { return !lesson.ready && !lesson.break; });
       return {
@@ -217,12 +229,44 @@
         sessionDate: null
       };
     }
-    var start = parseLocalDate(cls.startDate);
-    var session = weekSessionDate(cls, new Date());
-    var diff = Math.floor((session.getTime() - start.getTime()) / 604800000);
-    if (diff < 0) return { status: "upcoming", index: 0, sessionDate: session };
-    if (diff >= cls.lessons.length) return { status: "finished", index: cls.lessons.length - 1, sessionDate: session };
-    return { status: "active", index: diff, sessionDate: session };
+    if (!cls.lessons.length) return { status: "finished", index: 0, sessionDate: null };
+    var currentTime = (now || new Date()).getTime();
+    var nextIndex = cls.lessons.findIndex(function (lesson, index) {
+      var scheduled = lessonScheduledAt(cls, lesson, index);
+      return scheduled && scheduled.getTime() > currentTime;
+    });
+    if (nextIndex < 0) {
+      return {
+        status: "finished",
+        index: cls.lessons.length - 1,
+        sessionDate: lessonScheduledAt(cls, cls.lessons[cls.lessons.length - 1], cls.lessons.length - 1)
+      };
+    }
+    var firstSession = lessonScheduledAt(cls, cls.lessons[0], 0);
+    return {
+      status: firstSession && currentTime < firstSession.getTime() ? "upcoming" : "active",
+      index: nextIndex,
+      sessionDate: lessonScheduledAt(cls, cls.lessons[nextIndex], nextIndex)
+    };
+  }
+
+  function scheduleLessonRefresh() {
+    window.clearTimeout(lessonRefreshTimer);
+    var now = Date.now();
+    var nextStart = null;
+    currentQuarter().classes.forEach(function (cls) {
+      cls.lessons.forEach(function (lesson, index) {
+        var scheduled = lessonScheduledAt(cls, lesson, index);
+        var timestamp = scheduled ? scheduled.getTime() : 0;
+        if (timestamp > now && (nextStart === null || timestamp < nextStart)) nextStart = timestamp;
+      });
+    });
+    if (nextStart === null) return;
+    var delay = Math.min(Math.max(nextStart - now + 50, 50), 2147483000);
+    lessonRefreshTimer = window.setTimeout(function () {
+      renderSchedule();
+      scheduleLessonRefresh();
+    }, delay);
   }
 
   function shortDate(date) {
@@ -302,6 +346,7 @@
     renderTemplates();
     renderSummary();
     renderOverflowMenu();
+    scheduleLessonRefresh();
   }
 
   function renderQuarters() {
@@ -372,7 +417,7 @@
     var inactive = current.status === "finished" || !lesson;
     var statusText = current.status === "upcoming" ? "개강 전" :
       (current.status === "finished" ? "종강" : (current.index + 1) + "차시");
-    var metaText = current.status === "upcoming" ? shortDate(parseLocalDate(cls.startDate)) + " 개강 예정" :
+    var metaText = current.status === "upcoming" ? shortDate(current.sessionDate || parseLocalDate(cls.startDate)) + " 개강 예정" :
       (current.status === "undated" ? "개강일 미설정" : shortDate(current.sessionDate) + " 수업");
     var checkIcon = '<svg class="toggle-check" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.3 6.4 12 13 4.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
     return '<article class="class-card ' + current.status + " grade-" + escapeHtml(cls.grade || "unset") +
@@ -1024,6 +1069,17 @@
       $("importInput").value = "";
     };
     reader.readAsText(file);
+  });
+
+  document.addEventListener("visibilitychange", function () {
+    if (!document.hidden) {
+      renderSchedule();
+      scheduleLessonRefresh();
+    }
+  });
+  window.addEventListener("focus", function () {
+    renderSchedule();
+    scheduleLessonRefresh();
   });
 
   fillDaySelects();
