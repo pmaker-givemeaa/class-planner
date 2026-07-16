@@ -21,6 +21,7 @@
   var storageAvailable = true;
   var selectedClassIds = new Set();
   var lessonRefreshTimer = null;
+  var cloudConnected = false;
 
   function initialState() {
     var qid = uid();
@@ -97,7 +98,7 @@
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
       storageAvailable = true;
-      $("saveStatus").textContent = "방금 자동 저장됨";
+      $("saveStatus").textContent = cloudConnected ? "클라우드에 저장 중…" : "방금 로컬 저장됨";
     } catch (e) {
       storageAvailable = false;
       $("saveStatus").textContent = "브라우저 저장소를 사용할 수 없습니다. 백업 파일을 이용해 주세요.";
@@ -105,12 +106,13 @@
     window.clearTimeout(saveState.timer);
     if (storageAvailable) {
       saveState.timer = window.setTimeout(function () {
-        $("saveStatus").textContent = "이 브라우저에 자동 저장됩니다.";
+        $("saveStatus").textContent = cloudConnected ? "클라우드 자동 저장 사용 중" : "이 브라우저에 자동 저장됩니다.";
       }, 2200);
     }
     if (message) toast(message);
     renderSummary();
     scheduleLessonRefresh();
+    document.dispatchEvent(new CustomEvent("planner:change", { detail: { state: JSON.parse(JSON.stringify(state)) } }));
   }
 
   function currentQuarter() {
@@ -1081,6 +1083,33 @@
     renderSchedule();
     scheduleLessonRefresh();
   });
+
+  window.ClassPlanner = {
+    getState: function () {
+      return JSON.parse(JSON.stringify(state));
+    },
+    createEmptyState: function () {
+      return initialState();
+    },
+    replaceState: function (nextState, message) {
+      state = normalizeState(JSON.parse(JSON.stringify(nextState)));
+      activeClassId = null;
+      editingClassId = null;
+      selectedClassIds.clear();
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        storageAvailable = true;
+      } catch (e) {
+        storageAvailable = false;
+      }
+      render();
+      if (message) toast(message);
+    },
+    setCloudStatus: function (message, connected) {
+      cloudConnected = Boolean(connected);
+      $("saveStatus").textContent = message;
+    }
+  };
 
   fillDaySelects();
   render();

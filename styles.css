@@ -87,6 +87,13 @@ h1 { margin-bottom: 0; font-size: 29px; letter-spacing: -.8px; }
 .overflow-menu button:hover { background: #f1f6f3; }
 .overflow-menu button:disabled { color: #aab2ae; cursor: default; }
 .menu-divider { display: block; height: 1px; margin: 5px 3px; background: var(--line); }
+.auth-tools { margin-left: 5px; }
+.auth-button { color: #183326; border-color: #fff; background: #fff; font-weight: 750; }
+.auth-button:disabled { color: #9aa49f; border-color: #486055; background: #20382d; cursor: default; }
+.signed-in-user { display: flex; align-items: center; gap: 8px; }
+.signed-in-user img { width: 32px; height: 32px; border: 1px solid #486055; border-radius: 50%; background: #20382d; }
+.signed-in-user span { max-width: 120px; overflow: hidden; color: #eaf3ee; font-size: 11px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+.signed-in-user button { padding: 7px 9px; color: #dce9e2; border-color: #486055; background: #20382d; font-size: 11px; }
 
 main { padding: 26px 42px 60px; }
 main.summary-hidden { padding-top: 0; }
