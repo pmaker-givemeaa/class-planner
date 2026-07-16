@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>수업 플래너</title>
   <link rel="stylesheet" href="styles.css">
 </head>
@@ -74,6 +74,7 @@
           <p>이번 주 차시를 확인하고 준비 상태를 바로 체크할 수 있습니다.</p>
         </div>
       </div>
+      <div id="mobileDayTabs" class="mobile-day-tabs" role="tablist" aria-label="요일 선택"></div>
       <div id="scheduleBoard" class="schedule-board"></div>
       <div id="emptySchedule" class="empty-state hidden">
         <div class="empty-icon">週</div>
@@ -122,6 +123,8 @@
       </div>
     </section>
   </main>
+
+  <button id="mobileAddClassBtn" class="mobile-add-button" type="button" data-action="add-class" aria-label="선택한 요일에 수업 추가">+</button>
 
   <dialog id="classDialog">
     <form method="dialog" id="classForm">

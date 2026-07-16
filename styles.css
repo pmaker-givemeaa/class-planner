@@ -123,6 +123,7 @@ main.summary-hidden .tabs { margin-top: 0; }
 .panel-heading h2 { margin-bottom: 4px; font-size: 21px; }
 .panel-heading p { margin: 0; color: var(--muted); font-size: 13px; }
 .actions { display: flex; align-items: center; gap: 8px; }
+.mobile-day-tabs, .mobile-add-button { display: none; }
 
 .schedule-board { display: grid; grid-template-columns: repeat(7, minmax(140px, 1fr)); gap: 10px; align-items: start; }
 .day-column { min-height: 430px; padding: 9px; border: 1px solid var(--line); border-radius: 12px; background: #eef2ef; }
@@ -189,6 +190,8 @@ main.summary-hidden .tabs { margin-top: 0; }
 }
 .current-topics { min-height: 35px; margin: 0 0 10px; color: #33423b; font-size: 11px; line-height: 1.45; }
 .current-topics p { margin: 0; }
+.current-topics .current-homework { margin-top: 3px; color: #647169; font-size: 10px; }
+.current-topics .current-homework span { margin-right: 5px; color: var(--green); font-size: 9px; font-weight: 800; }
 .current-topics .secondary-topic { margin-top: 3px; color: #526b60; }
 .current-topics .secondary-topic span { margin-right: 5px; color: #6e7d76; font-size: 9px; font-weight: 800; }
 .card-checks { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-bottom: 10px; }
@@ -444,3 +447,212 @@ textarea { resize: vertical; line-height: 1.5; }
   transition: .2s ease;
 }
 .toast.show { opacity: 1; transform: none; }
+
+@media (max-width: 760px) {
+  body { min-width: 0; padding-bottom: 74px; }
+  button { min-height: 42px; }
+
+  .topbar {
+    height: auto;
+    padding: 14px 14px 16px;
+    display: block;
+  }
+  .topbar .eyebrow { margin-bottom: 2px; }
+  h1 { font-size: 23px; }
+  .quarter-tools { align-items: center; flex-wrap: wrap; gap: 7px; margin-top: 13px; }
+  .quarter-tools > label { flex: 1 1 100%; }
+  .quarter-tools select { width: 100%; min-width: 0; margin-top: 3px; }
+  #addQuarterBtn { flex: 0 0 auto; padding-inline: 11px; }
+  .icon-button { min-width: 43px; }
+  .overflow-menu { top: calc(100% + 7px); right: 0; width: min(230px, calc(100vw - 24px)); }
+  .overflow-menu button { min-height: 40px; font-size: 13px; }
+  .auth-tools { flex: 1 1 140px; margin: 0 0 0 auto; }
+  .auth-button { width: 100%; }
+  .signed-in-user { justify-content: flex-end; }
+  .signed-in-user span { flex: 1; max-width: none; }
+
+  main, main.summary-hidden { padding: 14px 14px 24px; }
+  .summary {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0;
+    padding: 5px 8px 0;
+  }
+  .summary > div { padding: 9px 12px; border-right: 0; border-bottom: 1px solid var(--line); }
+  .summary > div:nth-child(odd) { border-right: 1px solid var(--line); }
+  .summary > div:nth-child(n+3) { border-bottom: 0; }
+  .summary span { font-size: 10px; }
+  .summary strong { font-size: 17px; }
+  .summary p { grid-column: 1 / -1; justify-self: stretch; padding: 8px 5px; text-align: center; }
+
+  .tabs {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 12;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0;
+    margin: 0;
+    padding: 5px 8px max(5px, env(safe-area-inset-bottom));
+    border-top: 1px solid var(--line);
+    border-bottom: 0;
+    background: rgba(255, 255, 255, .96);
+    box-shadow: 0 -7px 22px rgba(23, 33, 29, .08);
+    backdrop-filter: blur(12px);
+  }
+  .tab { min-height: 50px; margin: 0; padding: 8px 3px; border-bottom: 0; border-radius: 8px; font-size: 12px; }
+  .tab.active { color: white; border: 0; background: var(--green); }
+  .panel-heading { align-items: flex-start; gap: 10px; padding: 20px 1px 13px; }
+  .panel-heading h2 { font-size: 19px; }
+  .panel-heading p { font-size: 12px; line-height: 1.45; }
+  .panel-heading > button { flex: 0 0 auto; padding-inline: 10px; font-size: 11px; }
+
+  .mobile-day-tabs {
+    display: flex;
+    gap: 6px;
+    margin: 0 -14px 12px;
+    padding: 2px 14px 7px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .mobile-day-tabs::-webkit-scrollbar { display: none; }
+  .mobile-day-tabs button {
+    flex: 1 0 43px;
+    min-width: 43px;
+    min-height: 52px;
+    padding: 6px 5px;
+    border-radius: 12px;
+    color: var(--muted);
+    background: white;
+  }
+  .mobile-day-tabs button strong, .mobile-day-tabs button span { display: block; }
+  .mobile-day-tabs button strong { font-size: 14px; }
+  .mobile-day-tabs button span { margin-top: 1px; font-size: 9px; opacity: .72; }
+  .mobile-day-tabs button.active { color: white; border-color: var(--green); background: var(--green); box-shadow: 0 5px 12px rgba(20, 108, 67, .22); }
+
+  .schedule-board { display: block; }
+  .day-column { display: none; min-height: 0; padding: 10px; border-radius: 15px; }
+  .day-column.mobile-active { display: block; }
+  .day-header { padding: 2px 3px 10px 7px; }
+  .day-header strong { font-size: 15px; }
+  .day-actions button { width: 38px; height: 38px; }
+  .class-card { margin-bottom: 10px; padding: 16px 15px 13px; border-radius: 13px; }
+  .class-card h3 { margin-bottom: 5px; padding-right: 54px; font-size: 15px; }
+  .class-time { font-size: 11px; }
+  .lesson-badge { top: 13px; right: 12px; padding: 6px 8px; font-size: 11px; }
+  .current-topics { min-height: 42px; font-size: 13px; }
+  .current-topics .current-homework { margin-top: 5px; font-size: 12px; }
+  .card-checks label { min-height: 42px; padding: 8px 10px; font-size: 11px; }
+  .card-checks .toggle-check { width: 16px; height: 16px; }
+  .class-meta, .class-meta .detail-link { font-size: 11px; }
+  .mobile-add-button {
+    position: fixed;
+    right: 16px;
+    bottom: calc(72px + env(safe-area-inset-bottom));
+    z-index: 11;
+    display: block;
+    width: 52px;
+    height: 52px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    color: white;
+    background: var(--green);
+    box-shadow: 0 8px 22px rgba(20, 108, 67, .32);
+    font-size: 29px;
+    line-height: 1;
+  }
+
+  .template-grid, .backup-grid { grid-template-columns: 1fr; gap: 10px; }
+  .template-card, .backup-grid article { padding: 18px; }
+  .backup-grid p { min-height: 0; }
+  .empty-state { padding: 60px 18px; }
+
+  dialog, #classDialog, .wide-dialog {
+    width: 100vw;
+    max-width: none;
+    max-height: 100dvh;
+    height: 100dvh;
+    margin: 0;
+    border-radius: 0;
+  }
+  .dialog-head { padding: 18px 16px 12px; }
+  .dialog-head h2 { font-size: 19px; }
+  dialog form > label, dialog form > .form-row, dialog form > .guide,
+  dialog form > .preview-text, dialog form > .lesson-bulk-row { margin-right: 16px; margin-left: 16px; }
+  .form-row, .form-row.class-time-row, .lesson-bulk-row { grid-template-columns: 1fr; gap: 12px; }
+  .lesson-set-heading { margin-right: 16px; margin-left: 16px; }
+  .lesson-set-heading span { line-height: 1.35; }
+  .dialog-actions { padding: 13px 16px max(18px, env(safe-area-inset-bottom)); }
+  .dialog-actions.split { align-items: flex-end; gap: 8px; }
+
+  .wide-dialog .dialog-head.sticky { align-items: flex-start; flex-wrap: wrap; padding-bottom: 10px; }
+  .wide-dialog .dialog-head.sticky > div:first-child { max-width: calc(100% - 45px); }
+  .wide-dialog .dialog-head.sticky .actions { width: 100%; flex-wrap: wrap; }
+  .wide-dialog .dialog-head.sticky .actions button:not(.close-button) { flex: 1; padding: 7px 5px; font-size: 10px; }
+  .wide-dialog .dialog-head.sticky .close-button { position: absolute; top: 11px; right: 10px; }
+  .table-wrap { padding: 10px 12px 24px; overflow: visible; }
+  .lesson-table { display: block; width: 100%; min-width: 0; }
+  .lesson-table thead { display: none; }
+  .lesson-table tbody { display: block; }
+  .lesson-table tr {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 9px;
+    margin-bottom: 12px;
+    padding: 48px 12px 13px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: white;
+    box-shadow: 0 3px 10px rgba(23, 33, 29, .05);
+  }
+  .lesson-table tr.done { background: #f3faf6; }
+  .lesson-table tr.break-row { background: #f1f1f1; }
+  .lesson-table td, .lesson-table td:first-child, .lesson-table td:last-child {
+    display: block;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+  }
+  .lesson-table td::before {
+    display: block;
+    margin-bottom: 4px;
+    color: var(--muted);
+    font-size: 9px;
+    font-weight: 800;
+  }
+  .lesson-table td:nth-child(1) { position: absolute; top: 15px; left: 14px; width: auto; }
+  .lesson-table td:nth-child(1)::before { content: "차시"; display: inline; margin-right: 5px; }
+  .lesson-table td:nth-child(1) strong { color: var(--green); font-size: 15px; }
+  .lesson-table td:nth-child(2), .lesson-table td:nth-child(3), .lesson-table td:nth-child(4),
+  .lesson-table td:nth-child(5), .lesson-table td:nth-child(6), .lesson-table td:nth-child(10) { grid-column: 1 / -1; }
+  .lesson-table td:nth-child(2)::before { content: "날짜"; }
+  .lesson-table td:nth-child(3)::before { content: "진도 1"; }
+  .lesson-table td:nth-child(4)::before { content: "과제 범위 1"; }
+  .lesson-table td:nth-child(5)::before { content: "진도 2 · 선택 입력"; }
+  .lesson-table td:nth-child(6)::before { content: "과제 범위 2"; }
+  .lesson-table td:nth-child(7)::before { content: "수업 준비"; }
+  .lesson-table td:nth-child(8)::before { content: "테스트"; }
+  .lesson-table td:nth-child(9)::before { content: "휴강"; }
+  .lesson-table td:nth-child(10)::before { content: "비고"; }
+  .lesson-table td:nth-child(7), .lesson-table td:nth-child(8), .lesson-table td:nth-child(9) {
+    min-height: 54px;
+    padding: 8px;
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    text-align: center;
+  }
+  .lesson-table td:nth-child(11) { position: absolute; top: 8px; right: 7px; }
+  .lesson-table input[type="text"] { min-height: 42px; }
+  .lesson-table input[type="checkbox"] { width: 22px; height: 22px; }
+  .lesson-table .date-warning { min-height: 0; }
+  .lesson-table td[class*="lesson-color-"] { padding: 7px; border-radius: 9px; }
+  .palette-popover { top: 34px; left: 0; }
+  .wide-dialog > .dialog-actions { position: sticky; bottom: 0; z-index: 3; margin-top: 0; background: rgba(255, 255, 255, .96); }
+
+  .toast { right: 14px; bottom: 83px; left: 14px; text-align: center; }
+}

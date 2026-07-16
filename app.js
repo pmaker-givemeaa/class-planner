@@ -22,6 +22,7 @@
   var selectedClassIds = new Set();
   var lessonRefreshTimer = null;
   var cloudConnected = false;
+  var mobileSelectedDay = DAYS[(new Date().getDay() + 6) % 7];
 
   function initialState() {
     var qid = uid();
@@ -396,12 +397,19 @@
       if (!classes.some(function (cls) { return cls.id === id; })) selectedClassIds.delete(id);
     });
     var visibleDays = DAYS.filter(function (day) { return state.hiddenDays.indexOf(day) < 0; });
+    if (visibleDays.indexOf(mobileSelectedDay) < 0) mobileSelectedDay = visibleDays[0] || "월";
+    $("mobileDayTabs").innerHTML = visibleDays.map(function (day) {
+      var count = classes.filter(function (cls) { return cls.day === day; }).length;
+      return '<button type="button" role="tab" data-mobile-day="' + day + '" aria-selected="' +
+        String(day === mobileSelectedDay) + '" class="' + (day === mobileSelectedDay ? "active" : "") + '">' +
+        '<strong>' + day + '</strong><span>' + count + '</span></button>';
+    }).join("");
     $("emptySchedule").classList.toggle("hidden", classes.length > 0);
     $("scheduleBoard").classList.toggle("hidden", classes.length === 0);
     $("scheduleBoard").style.gridTemplateColumns = "repeat(" + visibleDays.length + ", minmax(150px, 1fr))";
     $("scheduleBoard").innerHTML = visibleDays.map(function (day) {
       var dayClasses = classes.filter(function (c) { return c.day === day; });
-      return '<section class="day-column">' +
+      return '<section class="day-column' + (day === mobileSelectedDay ? " mobile-active" : "") + '" data-day="' + day + '">' +
         '<div class="day-header"><div class="day-title"><strong>' + day + '요일</strong><span>' + dayClasses.length + '개</span></div>' +
         '<div class="day-actions"><button class="day-hide" data-hide-day="' + day + '" title="' + day + '요일 숨기기">−</button>' +
         '<button class="day-add" data-add-day="' + day + '" title="' + day + '요일 수업 추가">+</button></div></div>' +
@@ -430,6 +438,7 @@
       "</h3>" +
       '<span class="class-time">' + escapeHtml((cls.startTime || "시각 미설정") + " · " + metaText) + "</span>" +
       '<div class="current-topics"><p>' + escapeHtml(lesson ? (lesson.topic || "진도 미입력") : "등록된 차시 없음") + "</p>" +
+      (lesson && lesson.homework ? '<p class="current-homework"><span>과제</span>' + escapeHtml(lesson.homework) + "</p>" : "") +
       (lesson && lesson.topic2 ? '<p class="secondary-topic"><span>수업 2</span>' + escapeHtml(lesson.topic2) + "</p>" : "") + "</div>" +
       '<div class="card-checks">' +
       '<label class="' + (lesson && lesson.ready ? "checked" : "") + '"><input type="checkbox" data-card-check="ready"' +
@@ -751,7 +760,14 @@
     if (!e.target.closest(".lesson-set-cell")) closeLessonPalettes();
     var close = e.target.closest("[data-close]");
     if (close) $(close.dataset.close).close();
-    if (e.target.closest('[data-action="add-class"]')) openClassDialog();
+    if (e.target.closest('[data-action="add-class"]')) openClassDialog(null, mobileSelectedDay);
+
+    var mobileDay = e.target.closest("[data-mobile-day]");
+    if (mobileDay) {
+      mobileSelectedDay = mobileDay.dataset.mobileDay;
+      renderSchedule();
+      return;
+    }
 
     var dayAdd = e.target.closest("[data-add-day]");
     if (dayAdd) openClassDialog(null, dayAdd.dataset.addDay);
@@ -773,6 +789,10 @@
     var card = e.target.closest("[data-class-id]");
     if (card && !e.target.closest(".card-checks")) {
       var id = card.dataset.classId;
+      if (window.matchMedia("(max-width: 760px)").matches) {
+        openLessons(id);
+        return;
+      }
       if (selectedClassIds.has(id)) selectedClassIds.delete(id);
       else selectedClassIds.add(id);
       renderSchedule();
@@ -810,6 +830,7 @@
       document.querySelectorAll(".panel").forEach(function (x) { x.classList.remove("active"); });
       tab.classList.add("active");
       $(tab.dataset.tab + "Panel").classList.add("active");
+      $("mobileAddClassBtn").classList.toggle("hidden", tab.dataset.tab !== "schedule");
     });
   });
 
