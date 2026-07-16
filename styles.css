@@ -190,7 +190,9 @@ main.summary-hidden .tabs { margin-top: 0; }
 }
 .current-topics { min-height: 35px; margin: 0 0 10px; color: #33423b; font-size: 11px; line-height: 1.45; }
 .current-topics p { margin: 0; }
-.current-topics .current-homework { margin-top: 3px; color: #647169; font-size: 10px; }
+.current-topics .previous-topic { margin-right: 8px; color: #929a96; font-style: italic; }
+.current-topics .current-topic { color: #33423b; }
+.current-topics .current-homework { display: block; margin-top: 4px; color: #647169; font-size: 10px; }
 .current-topics .current-homework span { margin-right: 5px; color: var(--green); font-size: 9px; font-weight: 800; }
 .current-topics .secondary-topic { margin-top: 3px; color: #526b60; }
 .current-topics .secondary-topic span { margin-right: 5px; color: #6e7d76; font-size: 9px; font-weight: 800; }

@@ -421,6 +421,14 @@
   function classCardHtml(cls) {
     var current = currentLessonInfo(cls);
     var lesson = cls.lessons[current.index];
+    var previousTopic = "";
+    for (var previousIndex = current.index - 1; previousIndex >= 0; previousIndex -= 1) {
+      var previousLesson = cls.lessons[previousIndex];
+      if (!previousLesson.break && (previousLesson.topic || "").trim()) {
+        previousTopic = previousLesson.topic.trim();
+        break;
+      }
+    }
     var eligible = cls.lessons.filter(function (l) { return !l.break; });
     var done = eligible.filter(function (l) { return l.ready; }).length;
     var rate = eligible.length ? Math.round(done / eligible.length * 100) : 0;
@@ -437,7 +445,9 @@
       (cls.book ? ' <span class="title-separator">·</span> <span class="book-name">' + escapeHtml(cls.book) + "</span>" : "") +
       "</h3>" +
       '<span class="class-time">' + escapeHtml((cls.startTime || "시각 미설정") + " · " + metaText) + "</span>" +
-      '<div class="current-topics"><p>' + escapeHtml(lesson ? (lesson.topic || "진도 미입력") : "등록된 차시 없음") + "</p>" +
+      '<div class="current-topics"><p class="primary-topic">' +
+      (previousTopic ? '<span class="previous-topic">' + escapeHtml(previousTopic) + "</span>" : "") +
+      '<span class="current-topic">' + escapeHtml(lesson ? (lesson.topic || "진도 미입력") : "등록된 차시 없음") + "</span></p>" +
       (lesson && lesson.homework ? '<p class="current-homework"><span>과제</span>' + escapeHtml(lesson.homework) + "</p>" : "") +
       (lesson && lesson.topic2 ? '<p class="secondary-topic"><span>수업 2</span>' + escapeHtml(lesson.topic2) + "</p>" : "") + "</div>" +
       '<div class="card-checks">' +
